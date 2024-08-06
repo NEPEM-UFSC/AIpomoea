@@ -1,7 +1,6 @@
-![Lint](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/super-linter.yml/badge.svg)
-
-
 # AIpomoea
+
+![Lint](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/super-linter.yml/badge.svg)
 
 ## Tecnologia em Fenotipagem e Classificação
 
@@ -22,21 +21,21 @@ A batata-doce é um alimento essencial em muitas culturas devido ao seu valor nu
 ## Tecnologia Empregada
 O projeto emprega uma variedade de tecnologias avançadas:
 
-### Visão computacional:
+### Visão computacional
 Utilizamos técnicas de visão computacional para capturar e analisar imagens das plantas, permitindo a extração de características biométricas com alta precisão.
 
-### Aprendizado de Máquina:
+### Aprendizado de Máquina
 Aplicamos algoritmos de aprendizado de máquina para analisar os dados coletados, melhorando a precisão na classificação e identificação de características importantes das plantas.
 
-### Métodos analíticos sofisticados:
+### Métodos analíticos sofisticados
 Empregamos outros métodos estatísticos e analíticos avançados para reduzir a subjetividade e aumentar a eficiência na análise dos dados fenotípicos.
 
-## Objetivos e resultados esperados:
+## Objetivos e resultados esperados
     - Otimização na classificação dos acessos genéticos de batata-doce.
     - Melhoria na qualidade e eficiência dos processos de melhoramento vegetal.
     - Desenvolvimento de cultivares mais resistentes a doenças e com melhores características biométricas.
 
-## Desenvolvedores:
+## Desenvolvedores
 
 Este projeto foi desenvolvido por: Matheus L. Machado
 
