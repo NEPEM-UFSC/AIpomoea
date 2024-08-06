@@ -35,6 +35,8 @@ jobs:
 
       - name: Lint Code Base
         uses: github/super-linter@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Pass the GITHUB_TOKEN
 
       - name: Upload Linter Report
         uses: actions/upload-artifact@v3
