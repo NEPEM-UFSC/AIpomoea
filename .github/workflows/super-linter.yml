@@ -1,0 +1,42 @@
+name: Lint
+
+on:
+  push:
+    branches: 
+    - main
+    - release/*
+  pull_request:
+    branches:
+    - main
+    - release/*
+
+jobs:
+  run-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python for linting
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11.8'  # Specify the Python version if needed
+
+      - name: Cache Super Linter
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/super-linter
+          key: ${{ runner.os }}-super-linter-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-super-linter-
+
+      - name: Lint Code Base
+        uses: github/super-linter@v4
+        
+      - name: Upload Linter Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: linter-report
+          path: .super-linter.yml
