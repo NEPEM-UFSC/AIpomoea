@@ -1,3 +1,6 @@
+![Lint](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/super-linter.yml/badge.svg)
+
+
 # AIpomoea
 
 ## Tecnologia em Fenotipagem e Classificação
