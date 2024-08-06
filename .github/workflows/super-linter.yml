@@ -1,14 +1,15 @@
+---
 name: Lint
 
 on:
   push:
-    branches: 
-    - main
-    - release/*
+    branches:
+      - main
+      - release/*
   pull_request:
     branches:
-    - main
-    - release/*
+      - main
+      - release/*
 
 jobs:
   run-lint:
@@ -22,7 +23,7 @@ jobs:
       - name: Set up Python for linting
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11.8'  # Specify the Python version if needed
+          python-version: '3.11.8'
 
       - name: Cache Super Linter
         uses: actions/cache@v3
@@ -34,7 +35,7 @@ jobs:
 
       - name: Lint Code Base
         uses: github/super-linter@v4
-        
+
       - name: Upload Linter Report
         uses: actions/upload-artifact@v3
         with:
