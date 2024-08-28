@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Sobre</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <style>
+        .about {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .badge-container img {
+            height: 32px;
+        }
+
+        .contact-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .contact-container a img {
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="top-container">
+            <nav style="animation: slideDown 0.7s;">
+                <ul>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                </ul>
+            </nav>
+    </header>
+    <section class="about">
+        <h1>Sobre</h1>
+        <p2>Este projeto é uma iniciação tecnológica (PIBITI-CNPQ) que representa uma parceria inovadora entre o Núcleo de Estudos e Pesquisas em Experimentação e Melhoramento Vegetal (NEPEM-UFSC) e o Núcleo de Estudos em Olericultura de Santa Catarina (NEOSC-UFSC). O objetivo principal é estabelecer um protocolo avançado de fenotipagem de alto rendimento para a batata-doce (Ipomoea batatas L.).</p>
+        <h2>Tecnologia empregada:</h2>
+        <p2>O projeto emprega tecnologias de ponta, incluindo visão computacional, aprendizado de máquina e outros métodos analíticos sofisticados, com o objetivo de reduzir a subjetividade na análise de dados. Nosso objetivo é otimizar a classificação dos acessos genéticos de batata-doce em aspectos vitais como qualidade, tamanho, conformação, resistência a doenças e características biométricas. Este esforço é essencial para promover uma agricultura mais avançada, eficiente e nutritiva.</p>
+        <p2>Esperamos que este projeto contribua significativamente para o avanço da agricultura e o melhoramento vegetal.</p>
+        <h2>Desenvolvedores:</h2>
+        <p2 style="text-align: center;">Este projeto foi desenvolvido por: Matheus L. Machado</p>
+        <div class="contact-container">
+            <a href="https://github.com/matheus-lopesm/" target="_blank" rel="noopener">
+                <img src="../static/images/badges/GITHUB.svg" alt="GitHub">
+            </a>
+            <a href="mailto:matheuslmachado03@gmail.com">
+                <img src="../static/images/badges/EMAIL.svg" alt="Email">
+            </a>
+        </div>
+        <h2 style="text-align: center;">Linguagens e Ferramentas Utilizadas:</h2>
+        <div class="badge-container">
+            <img src="../static/images/badges/PYTHON.svg" alt="Python">
+            <img src="../static/images/badges/ELECTRON.svg" alt="Electron">
+            <img src="../static/images/badges/HTML5.svg" alt="HTML5">
+            <img src="../static/images/badges/CSS3.svg" alt="CSS3">
+            <img src="../static/images/badges/JAVASCRIPT.svg" alt="JavaScript">
+            <img src="../static/images/badges/KERAS.svg" alt="Keras" >
+            <img src="../static/images/badges/TENSORFLOW.svg" alt="TensorFlow">
+            <img src="../static/images/badges/PANDAS.svg" alt="Pandas">
+            <img src="../static/images/badges/SQLITE.svg" alt="SQLite">
+        </div>
+        <footer class="app-version" id="app-version">
+            Versão:
+        </footer>
+    </body>
+    <script src="../static/js/version.js"></script>
+    </html>

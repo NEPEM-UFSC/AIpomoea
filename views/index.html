@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Home</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <style>
+        h1, p {
+            opacity: 0;
+            animation: fadeIn 1.5s forwards;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #6A5ACD;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 18px;
+            transition: background-color 0.3s;
+        }
+
+        .cta-button:hover {
+            background-color: #483D8B;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 125px;
+        }
+
+        .button-container button {
+            margin: 0 10px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+        }
+
+        .green-button {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            background-color: var(--green-leaves-color);
+            color: white;
+        }
+
+        .green-button:hover {
+            background-color: var(--green-leaves-hover-color);
+        }
+
+        .purple-button {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            background-color: var(--primary--purple-color);
+            color: white;
+        }
+
+        .purple-button:hover {
+            background-color: var(--purple-hover-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav style="animation: slideDown 0.7s;">
+            <ul>
+                <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
+                <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
+                <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h1>Bem vindo ao AIpomoea</h1>
+        <p>Pacote de ferramentas de fenotipagem avançada em batata-doce. </p>
+        <div class="button-container">
+            <button class="green-button"><a href="./leaves.html" style="color: white; text-decoration: none">Folhas</a></button>
+            <button class="purple-button"><a href="./roots.html" style="color: white; text-decoration: none">Raízes</a></button>
+        </div>
+    </main>
+    <footer class="app-version" id="app-version">
+        Versão:
+    </footer>
+</body>
+<script src="../static/js/version.js"></script>
+</html>

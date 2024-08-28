@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tools WebApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <styles>
+        .navbar {
+            overflow: hidden;
+            background-color: #333; /* Você pode ajustar a cor de fundo conforme necessário */
+        }
+        
+        .navbar a, .dropbtn {
+            float: left;
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+        
+        .navbar a:hover, .dropdown:hover .dropbtn {
+            background-color: #555;
+        }
+        
+        .dropdown {
+            float: left;
+            overflow: hidden;
+        }
+        
+        .dropdown .dropbtn {
+            cursor: pointer;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        
+        .dropdown-content a {
+            float: none;
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #ddd;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    </styles>    
+    </head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <a href="{{ url_for('index') }}" class="button">Home</a>
+                <div class="dropdown">
+                    <button class="dropbtn">Operações</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('folhas') }}">Folhas</a>
+                        <a href="{{ url_for('raizes') }}">Raízes</a>
+                    </div>
+                </div>
+                <a href="{{ url_for('configuracoes') }}" class="button">Configurações</a>
+                <a href="{{ url_for('ajuda') }}" class="button">Ajuda</a>
+                <a href="{{ url_for('sobre') }}" class="button">Sobre</a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html>

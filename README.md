@@ -1,6 +1,8 @@
 # AIpomoea
 
-![Lint](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/super-linter.yml/badge.svg)
+![Lint](https://github.com/matheus-lopesm/nepem-pibiti/actions/workflows/super-linter.yml/badge.svg)
+![CI](https://github.com/matheus-lopesm/nepem-pibiti/actions/workflows/main.yml/badge.svg)
+![Dependabot](https://github.com/matheus-lopesm/nepem-pibiti/actions/workflows/dependabot/dependabot-updates/badge.svg)
 
 ## Tecnologia em Fenotipagem e Classificação
 
@@ -37,15 +39,19 @@ Empregamos outros métodos estatísticos e analíticos avançados para reduzir a
 
 ## Desenvolvedores
 
-Este projeto foi desenvolvido por: Matheus L. Machado
+Este projeto foi desenvolvido por: Matheus L. Machado sob orientação do Prof Dr. Tiago Olivoto
 
 ## Informações de uso
 
-Um guia prático do projeto estará disponível em forma .pdf, adicionalmente existe um material no notion do projeto.
+Um guia prático do projeto está disponível em forma .pdf, adicionalmente existe um material no notion do projeto.
 
 ## Informações técnicas
 
-A documentação e detalhamento específico de funcionamento e integração estará disponível no notion do projeto [link], adicionalmente em um documento próprio a ser adicionado nesta aplicação.
+A documentação e detalhamento específico de funcionamento e integração estão disponível no notion do projeto [link], adicionalmente em um documento próprio a ser adicionado nesta aplicação.
+
+## Contato
+
+Para mais informações ou dúvidas, entre em contato com a equipe de desenvolvimento através do email: [email de contato]
 
 ## Licença
 

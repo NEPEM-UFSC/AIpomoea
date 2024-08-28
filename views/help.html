@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Ajuda</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <style>
+        .help {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .faq {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .documentation {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 5px;
+        }
+        .contact {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 5px;
+        }
+        .help-header, .faq-header, .documentation-header, .contact-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="top-container">
+            <nav style="animation: slideDown 0.7s;">
+                <ul>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                </ul>
+            </nav>
+    </header>
+    <section class="help">
+        <div class="help-header">
+            <h2>Ajuda</h2>
+            <p>Encontre informações úteis sobre o projeto.</p>
+        </div>
+    </section>
+    <section class="faq">
+        <div class="faq-header">
+            <h2>Perguntas frequentes</h2>
+            <p>Confira as perguntas mais frequentes sobre o projeto.</p>
+    </section>
+    <section class="documentation">
+        <div class="documentation-header">
+            <h2>Documentação</h2>
+            <p>Para informações mais detalhadas, consulte a documentação do projeto.</p>
+        </div>
+        <div class="badge-container">
+            <!-- <a href="https://www.notion.so/seu-projeto" target="_blank" rel="noopener">
+                <img src="../static/images/badges/NOTION.svg" alt="Notion" >
+            </a> -->
+            <a href="path_to_help_pdf.pdf" target="_blank">
+                <img src="../static/images/badges/PDF.svg" alt="PDF" >
+            </a>
+        </div>
+    </section>
+    <section class="contact">
+        <div class="contact-header">
+            <h2>Contato</h2>
+            <p>Entre em contato para informações não encontradas ou outras dúvidas.</p>
+        </div>
+        <div class="contact-container">
+            <a href="https://github.com/matheus-lopesm/" target="_blank" rel="noopener">
+                <img src="../static/images/badges/GITHUB.svg" alt="GitHub">
+            </a>
+            <a href="mailto:matheuslmachado03@gmail.com">
+                <img src="../static/images/badges/EMAIL.svg" alt="Email">
+            </a>
+    </section>
+    <footer class="app-version" id="app-version">
+        Versão:
+    </footer>
+</body>
+<script src="../static/js/version.js"></script>
+</html>

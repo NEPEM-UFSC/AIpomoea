@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Configurações</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/settings.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/popup.css">
+    <style>
+        .save-config {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .save-config button {
+            margin: 0 10px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+        }
+
+        .purple-button {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            background-color: var(--primary--purple-color);
+            color: white;
+        }
+
+        .purple-button:hover {
+            background-color: var(--purple-hover-color);
+        }
+
+        .span-box {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            background-color: var(--body-grey);
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: 1px solid #d0d0d0;
+            color: #000;
+            display: inline-block;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="top-container">
+            <nav style="animation: slideDown 0.7s;">
+                <ul>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                </ul>
+            </nav>
+    </header>
+    <div class="settings-container">
+        <h2>Configurações</h2>
+        <div class="section">
+            <h4>Diretório padrão de saída</h4>
+            <div class="setting">
+                <label for="output-folder">Caminho padrão para resultados:</label>
+                <span id="output-folder" class="span-box"></span>
+                <input type="file" id="OUTPUT_DIR" style="display: none;" webkitdirectory>
+                <button class="customDirSelect" id="select-directory-button">Selecionar diretório customizado</button>
+            </div>
+        </div>
+        <div class="section">
+            <h4>Critério de nomeação</h4>
+            <span id="wip">⚠️Em desenvolvimento...</span>
+            <div class="setting">
+                <label for="database">Utilizar nomeação orientada a genótipos:</label>
+                <input type="checkbox" id="ENABLE_GENOTYPE" name="ENABLE_GENOTYPE">
+            </div>
+            <div class="setting">
+                <label for="naming-convention-files">Padrão de nomeação de arquivos:</label>
+                <select id="naming-convention-files" name="GENOTYPE_STANDART">
+                    <option value="Matrix-Gen-Rep">Matriz - Genótipo - Repetição</option>
+                    <option value="Gen-Rep">Genótipo - Repetição</option>
+                    <option value="Trat-Gen-Rep">Efeito - Genótipo - Repetição</option>
+                </select>
+            </div>
+        </div>
+        <div class="section">
+            <h4>Configurações de Banco de dados</h4>
+            <span id="wip">⚠️Em desenvolvimento...</span>
+        </div>
+            <div class="setting">
+                <label for="database">Habilitar uso de Banco de dados SQLITE:</label>
+                <input type="checkbox" id="ENABLE_DB" name="ENABLE_DB">
+            </div>
+            <div class="setting" id="db-path-settings">
+                <label for="database-path">Caminho da Database:</label>
+                <span id="database-path" class="span-box"></span>
+                <input type="file" id="DB_PATH" style="display: none;" accept=".db">
+                <button class="customDirSelect" id="select-database-button">Selecionar banco de dados</button>
+            </div>
+            <div class="setting" id="db-name-settings">
+                <label for="database-name">Nome da tabela no DB:</label>
+                <input type="text" id="DB_NAME" name="DB_NAME">
+            </div>
+        <div class="save-config">
+            <button class="purple-button" id="save-config" onclick=writeConfig()>Salvar configurações</button>
+        </div>
+    </div>
+    <div class="popup-overlay" id="popup-overlay">
+        <div class="popup" id="sucess-popup">
+            <div class="popup-content">
+                <div class="popup-icon">
+                    <img src="../static/images/sucess.svg" alt="Sucesso">
+                </div>
+                <h3>Configurações salvas</h3>
+                <p>Suas definições foram salvas com sucesso.</p>
+                <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+            </div>
+        </div>
+    </div>
+    <script src="../static/js/config-handler.js"></script> 
+    <footer class="app-version" id="app-version">
+        Versão:
+    </footer>
+</body>
+<script src="../static/js/version.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+            readConfig();
+    });
+    
+    const enableDbCheckbox = document.getElementById('ENABLE_DB');
+    const dbSettings = document.getElementById('db-path-settings');
+    const dbNameSetting = document.getElementById('db-name-settings');
+
+    enableDbCheckbox.addEventListener('change', function() {
+        if (enableDbCheckbox.checked) {
+            dbSettings.style.display = 'flex';
+            dbNameSetting.style.display = 'flex';
+        } else {
+            dbSettings.style.display = 'none';
+            dbNameSetting.style.display = 'none';
+        }
+
+
+    if (!enableDbCheckbox.checked) {
+            dbPathSetting.style.display = 'none';
+            dbNameSetting.style.display = 'none';
+        }
+    });
+    
+    document.addEventListener('DOMContentLoaded', function() {
+            const selectButton = document.getElementById('select-directory-button');
+            const outputDirInput = document.getElementById('OUTPUT_DIR');
+            const outputFolderSpan = document.getElementById('output-folder');
+            const databasePathSpan = document.getElementById('database-path');
+            const databasePathInput = document.getElementById('DB_PATH');
+            const databaseSelectButton = document.getElementById('select-database-button');
+
+            databaseSelectButton.addEventListener('click', function() {
+                databasePathInput.click();
+            });
+
+            databasePathInput.addEventListener('change', function(event) {
+                const files = event.target.files;
+                if (files.length > 0) {
+                    const selectedFile = files[0];
+                    const fileExtension = selectedFile.name.split('.').pop();
+                    if (fileExtension === 'db') {
+                        const directoryPath = selectedFile.path;
+                        databasePathSpan.textContent = directoryPath;
+                    } else {
+                        databasePathSpan.textContent = 'Invalid file format. Please select a .db file.';
+                        databasePathInput.value = '';
+                    }
+                } else {
+                    databasePathSpan.textContent = 'Nenhum arquivo selecionado⚠️';
+                }
+            });
+
+            selectButton.addEventListener('click', function() {
+                outputDirInput.click();
+            });
+
+            outputDirInput.addEventListener('change', function(event) {
+                const files = event.target.files;
+                if (files.length > 0) {
+                    const firstFilePath = files[0].path;
+                    const directoryPath = firstFilePath.substring(0, firstFilePath.lastIndexOf('\\'));
+                    outputFolderSpan.textContent = directoryPath;
+                } else {
+                    outputFolderSpan.textContent = 'Nenhum diretório selecionado⚠️';
+                }
+            });
+        });
+</script>
+</html>

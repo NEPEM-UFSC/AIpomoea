@@ -1,0 +1,94 @@
+{
+  "name": "aipomoea",
+  "productName": "Aipomoea",
+  "version": "0.3.1",
+  "icon": "icone.ico",
+  "description": "Tecnologia em Fenotipagem e Classificação",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "npx @electron/packager . Aipomoea --platform=win32 --arch=x64 --icon=icone.ico --out=dist --overwrite",
+    "dist": "npx electron-builder --win",
+    "test": "echo \"No test specified\" && exit 0",
+    "last-log": "tail -f logs/last.log",
+    "debug": "set debug=true && electron --inspect=5858 ."
+  },
+  "repository": "https://github.com/matheus-lopesm/nepem-pibiti",
+  "keywords": [
+    "Electron",
+    "Sweet Potato"
+  ],
+  "author": "NEPEM - UFSC",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "@electron/packager": "^18.3.3",
+    "electron": "^31.2.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "winston": "^3.13.1"
+  },
+  "build": {
+    "appId": "com.aipomoea",
+    "win": {
+      "target": "nsis",
+      "icon": "icone.ico"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "extraFiles": [
+      {
+        "from": "uploads/",
+        "to": "uploads/",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "static/",
+        "to": "static/",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "python/",
+        "to": "python/",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "tools/",
+        "to": "tools/",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "results/",
+        "to": "results/",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "logs/",
+        "to": "logs/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "runAfterFinish": false,
+      "installerIcon": "icone.ico",
+      "uninstallerIcon": "icone.ico",
+      "artifactName": "${productName} Setup ${version}.${ext}"
+    }
+  }
+}

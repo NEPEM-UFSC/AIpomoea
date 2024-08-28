@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Bem Vindo</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <style>
+        .first-acess {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .first-acess h1, .first-acess p2, .purple-button {
+            opacity: 0;
+            animation: fadeIn 1.5s forwards;
+        }
+        .icon-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .text-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .button-container button {
+            margin: 0 10px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+        }
+        .purple-button {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            background-color: var(--primary--purple-color);
+            color: white;
+        }
+        .purple-button:hover {
+            background-color: var(--purple-hover-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="top-container">
+            <nav style="animation: slideDown 0.7s;">
+                <ul>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                </ul>
+            </nav>
+    </header>
+    <section class="first-acess">
+        <div class="first-acess">
+            <h1>Bem-vindo ao AIpomoea!</h1>
+            <div class="icon-container">
+                <img src="../static/images/icon.ico" alt="AIpomoea" style="width: 200px; height: 200px; margin-top: 20px; margin-bottom: 20px; border-radius: 50%;">
+            </div>
+            <div class="text-container">
+                <p2>Bem-vindo pela primeira vez ao AIpomoea! Para uma experiência ideal, recomendamos que você configure o aplicativo inicialmente para garantir que tudo funcione perfeitamente.</p2>
+                <p2>Acesse as configurações e insira as informações necessárias. Essa etapa é altamente recomendada, mas não obrigatória.</p2>
+                <p2>Se precisar de ajuda em qualquer etapa do processo, consulte o menu de ajuda na barra de navegação.</p2>
+                <p2>Clique no ícone de ajuda (representado pelo símbolo "?") para obter informações detalhadas e suporte.</p2>
+            </div>            
+            <div class="button-container">
+                <button class="purple-button"><a href="./settings.html" style="color: white; text-decoration: none">Configurar agora</a></button>
+            </div>
+        </div>
+    </section>
+    <footer class="app-version" id="app-version">
+        Versão:
+    </footer>
+</body>
+<script src="../static/js/version.js"></script>
+</html>

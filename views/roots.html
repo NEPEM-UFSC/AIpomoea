@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Operações</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/roots-styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/popup.css">
+</head>
+<body>
+    <header>
+        <div class="top-container">
+            <nav style="animation: slideDown 0.7s;">
+                <ul>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                </ul>
+            </nav>
+            <div class="top-content">
+                <h2>Operações</h2>
+                <div class="text-display">
+                    <p>Operações com raízes de Batata-Doce</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="content-container">
+            <div class="mode-dropdown">
+                <button id="modeButton" class="dropdown-button">Tipo de Processamento</button>
+                <div class="dropdown-content">
+                    <a href="#" onclick="return setMode('single')">Único</a>
+                    <a href="#" onclick="return setMode('batch')">Em lote</a>
+                </div>
+            </div>
+            <input type="file" id="fileInput" style="display:none;">
+            <div id="modeIndicator" class="mode-indicator">Modo Selecionado: </div>
+            <div class="visualization-wrapper">
+                <div class="visualization-container" id="visualizationContainer">
+                    <img src="../static/images/placeholder.png" alt="A imagem será carregada aqui." id="imageDisplay">
+                </div>
+                <div class="image-navigation">
+                    <button id="prevImageButton" onclick="prevImage()" style="display:none;"><<</button>
+                    <button id="nextImageButton" onclick="nextImage()" style="display:none;">>></button>
+                </div>
+            </div>
+        </div>
+        <div class="side-panel">
+            <section class="preloading"></section>
+                <h2 style="margin-right: 1200px; margin-bottom: 0;">Configurações:</h3>
+                <h3 style="margin-right: 50px; display: none;">Pré-carregamento</h3>
+                <div class="preloading-genotype" style="display: none;">
+                    <div class="text-options">
+                        <select id="textOption">
+                            <option value="selectOnly">Incluir</option>
+                            <option value="excludeOnly">Excluir</option>
+                        </select>
+                        <input type="text" id="textInput" placeholder="Insira a configuração.">
+                    </div>
+                </div>
+                <div class="preloading-genotype" style="display: none;">
+                    <input type="checkbox" id="export-separation">
+                    <label for="export-separation">Separar resultados por fator.</label>
+                </div>
+            </section>
+            <section class="operations">
+                <h3 style="margin-right: 1200px;">Operações</h3>
+                <div class="operation-item">
+                    <input type="checkbox" id="root-commercial-qualifier">
+                    <label for="root-commercial-qualifier">Qualificação Comercial</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="root-color">
+                    <label for="root-color">Cor</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="root-advanced-color">
+                    <label for="root-advanced-color">Cor Avançada</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="root-format">
+                    <label for="root-format">Formato</label>
+                </div>
+            </section>
+            <section class="export-type">
+                <h3 style="margin-right: 2700px;">Exportação</h3>
+                <div class="operation-item">
+                    <input type="checkbox" id="csv">
+                    <label for="csv" class="operation-item">CSV</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="json">
+                    <label for="json" class="operation-item">JSON</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="connected-database">
+                    <label for="connected-database" class="operation-item">DB Conectada</label>
+                </div>
+            </section>
+            <button class="execute-button" style="opacity: 0%; pointer-events: none;" onclick="executeCustomLoading(); executeCommands(modeName); uploadImage(modeName);">Executar</button>
+        </div>        
+    </div>
+    <div class="popup-overlay" id="popup-overlay">
+        <div class="popup" id="loading-popup">
+            <div class="popup-content">
+                <div class="popup-icon">
+                    <div class="loading-spinner"></div>
+                    </div>
+                <h2>Processando...</h2>
+                <p>Aguarde enquanto o processo é concluído.</p>
+            </div>
+        </div>
+        <div class="popup" id="sucess-popup">
+            <div class="popup-content">
+                <div class="popup-icon">
+                    <img src="../static/images/sucess.svg" alt="Sucesso">
+                </div>
+                <h2>Processamento Concluído</h2>
+                <p>As operações foram concluídas com sucesso.</p>
+                <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+            </div>
+        </div>
+        <div class="popup" id="failure-popup">
+            <div class="popup-content">
+                <div class="popup-icon">
+                    <img src="../static/images/error.svg" alt="Erro">
+                </div>
+                <h2>Processamento Falhou</h2>
+                <p>Por favor, tente novamente, ou contacte o desenvolvedor.</p>
+                <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+            </div>
+        </div>
+    </div>
+    <footer class="app-version" id="app-version">
+        Versão:
+    </footer>
+</body>
+<script src="../static/js/version.js"></script>
+<script src="../static/js/image-handler.js"></script>
+<script src="../static/js/send-commands.js"></script> 
+<script src="../static/js/receive-response.js"></script>
+<script src="../static/js/custom-loading.js"></script>
+</body>
+<script>
+    var prevButton = document.getElementById('prevImageButton');
+    var nextButton = document.getElementById('nextImageButton');
+    var fileInput = document.getElementById('fileInput');
+
+    function setMode(modeName) {
+        window.location.hash = modeName;
+        window.modeName = modeName;
+        document.getElementById('modeIndicator').textContent = 'Modo Selecionado: ' + modeName;
+
+        if (modeName) {
+            fileInput.style.display = 'block';
+            document.querySelector('.execute-button').style.opacity = '100%';
+            document.querySelector('.execute-button').style.pointerEvents = 'auto';
+            if (modeName === 'single') {
+                fileInput.setAttribute('accept', 'image/*');
+                fileInput.removeAttribute('webkitdirectory');
+                fileInput.removeAttribute('directory');
+                prevButton.style.display = 'none';
+                nextButton.style.display = 'none';
+            } else if (modeName === 'sequential' || modeName === 'batch') {
+                fileInput.removeAttribute('accept');
+                fileInput.setAttribute('webkitdirectory', true);
+                fileInput.setAttribute('directory', true);
+                prevButton.style.display = '';
+                nextButton.style.display = '';
+            }
+        } else {
+            fileInput.style.display = 'none';
+        }
+        return false;
+        }
+</script>
+</html>

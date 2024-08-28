@@ -1,0 +1,103 @@
+:root {
+    --primary--purple-color: #46316a;
+    --dim-gray: #696969;
+    --body-gray: #f0f0f0;
+    --header-gray: #e0e0e0;
+    --purple-hover-color: #5a4aad;
+    --green-leaves-color: #1f7b16;
+    --green-leaves-hover-color: #27AE60;
+    --panel-white: #fafafa;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--body-gray);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.settings-container {
+    background-color: var(--panel-white);
+    padding: 20px;
+    border-radius: 8px;
+    overflow: auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 60%;
+    margin-top: 130px;
+    margin-bottom: 20px;
+}
+
+.section {
+    margin-bottom: 20px;
+}
+
+.setting {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    align-items: center; /* Added */
+}
+
+label {
+    display: flex;
+    justify-content: flex-start;
+    font-weight: bold;
+    color: var(--dim-gray);
+    flex: 1; /* Added */
+}
+
+span {
+    color: var(--dim-gray);
+    justify-self: flex-end;
+    flex: 1; /* Added */
+    text-align: right; /* Added */
+}
+.sucess-dialog {
+    background-color: var(--body-gray);
+    padding: 10px;
+    border-radius: 12px;
+    margin-top: 20px;
+    display: none;
+    z-index: 1;
+    overflow: auto;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    max-width: 90%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    
+}
+
+.dialog-message {
+    display: flex;
+    justify-content: center; /* Modified */
+    align-items: center; /* Modified */
+    color: #000;
+}
+.dialog-button {
+    margin: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Modified */
+    background-color: var(--green-leaves-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.dialog-button:hover {
+    background-color: var(--green-leaves-hover-color);
+}
