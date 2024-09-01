@@ -1,8 +1,8 @@
 # AIpomoea <img src=".github/icone.png" align="right" height="120/"/>
 
 ![NEPEMVERSE](https://img.shields.io/endpoint?url=https://nepemverse.vercel.app/latest-version/aipomoea-stamp&label=LatestVersion:&labelColor=1278ce&logo=nepemverse&logoColor=white&style=plastic&color=#9e2626&cacheSeconds=3600)
-![CI](https://github.com/matheus-lopesm/nepem-pibiti/actions/workflows/main.yml/badge.svg)
-![Dependabot](https://github.com/matheus-lopesm/nepem-pibiti/actions/workflows/dependabot/dependabot-updates/badge.svg)
+![CI](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/main.yml/badge.svg)
+![Dependabot](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/dependabot/dependabot-updates/badge.svg)
 
 ## Tecnologia em Fenotipagem e Classificação
 
