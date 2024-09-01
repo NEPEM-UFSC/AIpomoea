@@ -1,8 +1,7 @@
 # AIpomoea <img src=".github/icone.png" align="right" height="120/"/>
 
 ![NEPEMVERSE](https://img.shields.io/endpoint?url=https://nepemverse.vercel.app/latest-version/aipomoea-stamp&label=LatestVersion:&labelColor=1278ce&logo=nepemverse&logoColor=white&style=plastic&color=#9e2626&cacheSeconds=3600)
-![CI](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/test.yml/badge.svg)
-![Dependabot](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/dependabot/dependabot-updates/badge.svg)
+[![CI](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/main.yml/badge.svg)](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/main.yml)
 
 ## Tecnologia em Fenotipagem e Classificação
 
@@ -43,15 +42,12 @@ Este projeto foi desenvolvido por: Matheus L. Machado sob orientação do Prof D
 
 ## Informações de uso
 
-Um guia prático do projeto está disponível em forma .pdf, adicionalmente existe um material no notion do projeto.
-
-## Informações técnicas
-
-A documentação e detalhamento específico de funcionamento e integração estão disponível no notion do projeto [link], adicionalmente em um documento próprio a ser adicionado nesta aplicação.
+Um guia prático do projeto está disponível em forma .pdf
 
 ## Contato
 
-Para mais informações ou dúvidas, entre em contato com a equipe de desenvolvimento através do email: [email de contato]
+Para mais informações ou dúvidas, entre em contato com o desenvolvedor [Email](mailto:matheuslmachado03@gmail.com)
+
 
 ## Licença
 
