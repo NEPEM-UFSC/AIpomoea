@@ -7,14 +7,21 @@ import pandas as pd
 import subprocess
 import time
 import sqlite3
+from contextlib import contextmanager
 from multiprocessing import Pool, current_process
 
+
+""" Development Flags
+
+    DEBUG: If True, debug messages will be printed, WARNING: The use of debug can raise false-positive error messages in client, it is recommended to use running this file directly.
+    PERFORM_BENCHMARK: If True, the time taken for the execution of the recipe will be printed.
+"""
+
 DEBUG = False
+PERFORM_BENCHMARK = False
 
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 pd.options.mode.chained_assignment = None
-
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 UPLOAD_FOLDER_BUILD = os.path.abspath('./uploads')
 UPLOAD_FOLDER_DIST = os.path.abspath('./resources/app/uploads')
@@ -85,7 +92,6 @@ class Model:
 class Utils:
     def __init__(self):
         self.start_time = None
-        pass
 
     def benchmark(self):
         self.start_time = time.time()
@@ -94,10 +100,22 @@ class Utils:
         end_time = time.time()
         if self.start_time is not None:
             elapsed_time = end_time - self.start_time
-            print(f"Benchmark completed in {elapsed_time} seconds.")
+            print(f"Benchmark completed in {elapsed_time:.6f} seconds.")
         else:
             print("Benchmark start time is not set.")
 
+    @contextmanager
+    def benchmark_time(self, description="Operation"):
+        self.benchmark()
+        try:
+            yield
+        finally:
+            self.end_benchmark()
+            if self.start_time is not None:
+                print(f"{description} completed in {time.time() - self.start_time:.6f} seconds.")
+            else:
+                print("Benchmark start time is not set.")
+                
 class Factory:
     """    
     A class for factory method of IA processing..
@@ -172,6 +190,21 @@ class Factory:
         self.models = Model()
         self.db_conn = None
         self.db_cursor = None
+        self.batch_size = 50
+
+        if PERFORM_BENCHMARK:
+            self.utils = Utils()
+
+
+    @contextmanager
+    def change_directory(self, new_path):
+        """Context manager to safely change directories."""
+        original_cwd = os.getcwd()
+        os.chdir(new_path)
+        try:
+            yield
+        finally:
+            os.chdir(original_cwd)
 
     def decompose_commands(self, commands):
         """
@@ -640,54 +673,102 @@ class Factory:
                 os.chdir(original_cwd)
         self.export_results(sequential_results)
     
+    def _get_binary_path(self, command):
+        """Find the correct binary path for the given command."""
+        try:
+            if os.path.exists(MODELS_PATH_BUILD):
+                binary_path = os.path.join(os.path.abspath(MODELS_PATH_BUILD), command + ".exe")
+                if DEBUG:
+                    print(f"DEBUG - Changed directory to {MODELS_PATH_BUILD}")
+                return binary_path, MODELS_PATH_BUILD
+            elif os.path.exists(MODELS_PATH_DIST):
+                binary_path = os.path.join(os.path.abspath(MODELS_PATH_DIST), command + ".exe")
+                if DEBUG:
+                    print(f"DEBUG - Changed directory to {MODELS_PATH_DIST}")
+                return binary_path, MODELS_PATH_DIST
+            else:
+                return None, None
+        except Exception as e:
+            if DEBUG:
+                print(f"DEBUG - Error while getting binary path: {e}")
+            raise RuntimeError(f"FBIN1_P - Error while loading binary: {e}")
+
+    def _run_subprocess(self, binary_path, batch):
+        """Run the subprocess for a batch of images."""
+        try:
+            result = subprocess.check_output([binary_path] + batch)
+            return result.decode('utf-8').strip().split('\n')
+        except subprocess.CalledProcessError as e:
+            print(f"FRSB1 - Subprocess error: {e}")
+            raise e
+
+    def _process_results(self, result_lines, command):
+        """Process the result lines from the subprocess."""
+        results = []
+        for line in result_lines:
+            parts = line.split(" Result: ")
+            if len(parts) == 2:
+                image_filename = os.path.basename(parts[0].split(": ")[1]).strip(" -")
+                image_filename = os.path.splitext(image_filename)[0]
+                result_values = parts[1].replace('*', '').strip()
+                results.append((image_filename, command, result_values))
+                if DEBUG:
+                    print(f"DEBUG - Processed result for {image_filename}: {result_values}")
+        return results
+
     def _execute_command(self, command):
         """
         Executes a single command and returns the result, with compatibility for parallelized execution.
         
         Args:
             command (str): The command to be executed.
-
+    
         Returns:
-            tuple: (image_filename, command, result_values) or error message.
+            list: List of tuples (image_filename, command, result_values) or error message.
         """
         if DEBUG:
             print(f"DEBUG - Process {current_process().name} - Executing command {command}...")
-
-        original_cwd = os.getcwd()
-        binary_path = None
-
+    
         try:
-            if os.path.exists(MODELS_PATH_BUILD):
-                binary_path = os.path.join(os.path.abspath(MODELS_PATH_BUILD), command + ".exe")
-                os.chdir(MODELS_PATH_BUILD) 
-            elif os.path.exists(MODELS_PATH_DIST):
-                binary_path = os.path.join(os.path.abspath(MODELS_PATH_DIST), command + ".exe")
-                os.chdir(MODELS_PATH_DIST) 
-        except Exception as e:
-            return (f"FBIN1_P - Error while loading binary: {e}",)
-
-        if binary_path:
-            try:
-                image_path = list(self.images.values())
-                result = subprocess.check_output([binary_path] + image_path)
-                result = result.decode('utf-8').strip()
-                result_lines = result.split('\n')
-
-                results = []
-                for line in result_lines:
-                    parts = line.split(" Result: ")
-                    if len(parts) == 2:
-                        image_filename = os.path.basename(parts[0].split(": ")[1]).strip(" -")
-                        image_filename = os.path.splitext(image_filename)[0]
-                        result_values = parts[1].replace('*', '').strip()
-                        results.append((image_filename, command, result_values))
-                return results
-            except Exception as e:
-                return (f"FBIN2_P - Error while executing {command}: {e}",)
-            finally:
-                os.chdir(original_cwd)
-        else:
-            return (f"FBIN3_P Model {command} not found.",)
+            binary_path, models_path = self._get_binary_path(command)
+            if not binary_path:
+                if DEBUG:
+                    print(f"DEBUG - Model {command} not found.")
+                return [(f"FBIN3_P Model {command} not found.",)]
+    
+            image_paths = list(self.images.values())
+            results = []
+    
+            with self.change_directory(models_path):
+                for i in range(0, len(image_paths), self.batch_size):
+                    batch = image_paths[i:i + self.batch_size]
+                    if DEBUG:
+                        print(f"DEBUG - Processing batch {i // self.batch_size + 1}: {batch}")
+                    try:
+                        result_lines = self._run_subprocess(binary_path, batch)
+                        results.extend(self._process_results(result_lines, command))
+                    except Exception as e:
+                        if DEBUG:
+                            print(f"DEBUG - Error while executing {command} on batch, retrying with smaller batch: {e}")
+                        # Retry logic for smaller batch
+                        for j in range(i, i + self.batch_size, self.batch_size // 2):
+                            retry_batch = image_paths[j:j + self.batch_size // 2]
+                            if DEBUG:
+                                print(f"DEBUG - Retrying with smaller batch {j // (self.batch_size // 2) + 1}: {retry_batch}")
+                            try:
+                                result_lines = self._run_subprocess(binary_path, retry_batch)
+                                results.extend(self._process_results(result_lines, command))
+                            except Exception as retry_e:
+                                if DEBUG:
+                                    print(f"DEBUG - Error during retry: {retry_e}")
+                                results.append((f"FBIN2_P - Error while retrying smaller batch", retry_e))
+    
+        except Exception as outer_e:
+            if DEBUG:
+                print(f"DEBUG - Outer exception caught: {outer_e}")
+            return [("FBIN2_P - Outer exception caught", outer_e)]
+    
+        return results
 
     def execute_recipes_parallel(self):
         """
@@ -697,10 +778,31 @@ class Factory:
         Raises:
             None
         """
+
+        expected_images = len(self.images)
+        copied_images = set(os.listdir(self.upload_folder))
+
+        try:
+            wait_time = 0
+            while len(copied_images) < expected_images:
+                if DEBUG and wait_time % 2 == 0:
+                    missing_images = expected_images - len(copied_images)
+                    print(f"DEBUG - Waiting for images to be copied... {len(missing_images)} images remaining.")     # type: ignore
+                time.sleep(1)
+                wait_time += 1
+                copied_images = set(os.listdir(self.upload_folder))
+
+        except Exception as e:
+            print(f"FPAR2 - Error while waiting for images to be copied: {e}")
+            return e
+        
         if DEBUG:
             print("DEBUG - Executing recipes in parallel...")
 
         with Pool() as pool:
+            if PERFORM_BENCHMARK:
+                with self.utils.benchmark_time("Executing commands in parallel"):
+                    results = pool.map(self._execute_command, self.loaded_recipes)
             results = pool.map(self._execute_command, self.loaded_recipes)
 
         # Flatten results and handle errors
