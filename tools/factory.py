@@ -819,10 +819,18 @@ class Factory:
 
         self.export_results(sequential_results)
 
-if __name__ == "__main__":
-    factory = Factory()
-    try:
-        factory.execute_recipes_parallel() 
-    except Exception as e:
-        print(f"FPAR_MASTER - Error while executing recipe using a paralellization, trying sequential: {e}")
-        factory.execute_recipe()
+def handle_parallel_recipes_execution(__name__, Factory):
+    if __name__ == "__main__":
+        factory = Factory()
+        try:
+            factory.execute_recipes_parallel() 
+        except Exception as e:
+            print(f"FPAR_MASTER - Error while executing recipe using a paralellization, trying sequential: {e}")
+            factory.execute_recipe()
+        except KeyboardInterrupt:
+            print("FPAR_MASTER - Execution interrupted by user.")
+        finally:
+            if hasattr(factory, 'db_conn') and hasattr(factory, 'db_cursor'):
+                factory.db_conn.close()
+
+handle_parallel_recipes_execution(__name__, Factory)
