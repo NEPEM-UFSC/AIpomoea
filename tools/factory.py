@@ -1,3 +1,43 @@
+"""
+FACTORY.PY - The Engine(monolith) of AIpomoea
+
+This file serves as the core engine behind AIpomoea, orchestrating the entire workflow of model execution,
+image processing, and result generation. It acts as the heart of the application, handling every step 
+from loading AI models to processing user-defined tasks, allowing the system to execute complex recipes 
+in an efficient and automated manner.
+
+Key responsibilities include:
+- **Loading models**: The file is responsible for dynamically loading pre-trained AI models from predefined
+  locations. It supports parallel processing for performance optimization, ensuring the models are
+  prepared and validated before use.
+  
+- **Executing recipes**: Recipes, which are sequences of commands defined by the user, are interpreted and 
+  executed in this file. The factory orchestrates the preprocessing, application of models, and post-processing 
+  to generate accurate results.
+  
+- **Parallel execution**: To maximize efficiency, multiple models can be executed in parallel. This reduces 
+  latency and increases throughput, particularly for larger datasets where multiple operations must be 
+  carried out simultaneously.
+
+- **Exporting results**: Once processing is complete, the factory manages the exportation of results in 
+  various formats as defined by the user. This includes the ability to group results by specific criteria 
+  (such as genotype-based sorting) and save them in multiple output formats.
+
+- **Handling custom configurations**: The factory adapts its execution based on user configurations, 
+  which can include custom preloading paths, export preferences, and special commands for fine-tuning 
+  the output.
+
+- **Automation**: The entire process from model loading to result generation is designed to be fully automated,
+  reducing manual intervention and allowing for batch processing of large datasets in a production environment.
+
+- **Scalability**: Built with scalability in mind, the factory.py file is adaptable to various hardware 
+  configurations, ensuring compatibility across different systems while maintaining performance.
+
+License: refer to the LICENSE file provided with the code for information on usage and redistribution rights.
+
+version: 0.4.1 - 14/10/2024
+"""
+
 import os
 import json
 import re
@@ -7,16 +47,66 @@ import pandas as pd
 import subprocess
 import time
 import sqlite3
+from contextlib import contextmanager
 from multiprocessing import Pool, current_process
 
+
+"""
+Development Flags:
+
+    DEBUG: 
+        - If True, debug messages will be printed to the console.
+        - WARNING: The use of debug mode may produce false-positive error messages during client operation.
+        - It is recommended to use debug mode only when running this file directly in a development environment.
+    
+    PERFORM_BENCHMARK: 
+        - If True, the time taken for the execution of each recipe will be logged.
+        - This is useful for performance analysis and identifying bottlenecks in the processing pipeline.
+
+Current Development Status:
+
+    The code is fully functional, but still undergoing optimization for better performance. 
+    Significant improvements are in progress, particularly regarding error handling, exception management, 
+    and the implementation of new features.
+
+    Key improvements underway include:
+    - **Error and Exception Handling**: The code is being updated to more gracefully manage errors, 
+      ensuring robustness and minimizing crashes during execution.
+    - **Refactoring**: The codebase is being refactored to enhance readability, maintainability, and scalability, 
+      making it easier for developers to contribute and modify in future versions.
+    - **New Features**: Upcoming releases will introduce more advanced model execution methods, along with enhanced 
+      support for complex saving operations.
+
+Parallel Execution:
+
+    - The code is now capable of executing recipes in parallel using the `multiprocessing.Pool` class, significantly
+      reducing processing time for large datasets and enhancing overall efficiency.
+    - In the event of an error during parallel execution, the fallback mechanism will automatically switch to 
+      sequential execution using the `subprocess` module, ensuring that recipes complete even if parallelization 
+      encounters issues.
+
+#TODOs:
+
+    - **Model Execution Method**: Implement a new model execution method to ensure backward compatibility 
+      with earlier versions of the code.
+    
+    - **Preprocessing Handling**: Improve handling for complex saving operations and pre-processing steps 
+      (referred to as 'prepyrus') to allow for greater flexibility and control in batch processing.
+    
+    - **Database Connection**: Develop a more flexible and dynamic way to handle database connections, 
+      allowing compatibility with various database systems and configurations.
+
+Note:
+    Documentation is currently obfuscated in parts of the code. This will be improved in future commits 
+    to provide better clarity and guidance for developers.
+"""
+
 DEBUG = False
+PERFORM_BENCHMARK = False
 
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-pd.options.mode.chained_assignment = None
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-UPLOAD_FOLDER_BUILD = os.path.abspath('./uploads')
+pd.options.mode.chained_assignment = None # Suppress verbose warnings
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'} # Allowed image file extensions
+UPLOAD_FOLDER_BUILD = os.path.abspath('./uploads') 
 UPLOAD_FOLDER_DIST = os.path.abspath('./resources/app/uploads')
 RECIPE_PATH_BUILD = os.path.abspath('./recipe.json')
 RECIPE_PATH_DIST = os.path.abspath('./resources/app/recipe.json')
@@ -83,24 +173,89 @@ class Model:
         return self.models[name] if name in self.models else None
 
 class Utils:
+    """
+    A class for utility functions.
+    NOTE: This class is intended for benchmarking purposes and may be expanded in future versions, as it is not used for production operations.
+    IMPORTANT: Set the PERFORM_BENCHMARK flag to True to enable benchmarking.
+
+    Attributes:
+        start_time (float): The start time of the benchmark.
+
+    Methods:
+        benchmark(): Starts the benchmark timer.
+        end_benchmark(): Ends the benchmark and prints the elapsed time.
+        benchmark_time(description="Operation"): Context manager for benchmarking the execution time of an operation.
+
+    """
+
     def __init__(self):
         self.start_time = None
-        pass
 
     def benchmark(self):
+        """
+        Measures the execution time of a function or a block of code.
+
+        Usage:
+            benchmark()
+        
+        Returns:
+            None
+        """
         self.start_time = time.time()
 
     def end_benchmark(self):
+        """
+        Ends the benchmark and prints the elapsed time.
+
+        If the start time is set, calculates the elapsed time by subtracting the start time from the current time.
+        Prints the elapsed time in seconds with 6 decimal places.
+        If the start time is not set, prints a message indicating that the benchmark start time is not set.
+        """
         end_time = time.time()
         if self.start_time is not None:
             elapsed_time = end_time - self.start_time
-            print(f"Benchmark completed in {elapsed_time} seconds.")
+            print(f"Benchmark completed in {elapsed_time:.6f} seconds.")
         else:
             print("Benchmark start time is not set.")
 
+    @contextmanager
+    def benchmark_time(self, description="Operation"):
+        """
+        Context manager for benchmarking the execution time of an operation.
+
+        Parameters:
+        - description (str): Description of the operation being benchmarked.
+
+        Usage:
+            with benchmark_time(description="Operation"):
+                # Code to be benchmarked
+
+        The benchmark_time context manager starts the benchmark timer, executes the code block inside the 'with' statement, and stops the timer when the code block completes. It then prints the elapsed time in seconds.
+
+        Example:
+            with benchmark_time(description="Sorting"):
+                my_list = [3, 1, 4, 2]
+                my_list.sort()
+
+        Output:
+            Sorting completed in 0.000123 seconds.
+        """
+        self.benchmark()
+        try:
+            yield
+        finally:
+            self.end_benchmark()
+            if self.start_time is not None:
+                print(f"{description} completed in {time.time() - self.start_time:.6f} seconds.")
+            else:
+                print("Benchmark start time is not set.")
+                
 class Factory:
     """    
-    A class for factory method of IA processing..
+    The Factory class is the core engine of the AIpomoea application, responsible for orchestrating the entire workflow...
+    since model execution, image processing, and result generation. 
+    It acts as the heart of the application, handling every step from loading AI models to processing user-defined tasks, allowing the system to execute complex recipes in an efficient and automated manner.
+    
     Attributes:
         upload_folder (str): The path to the upload folder.
         recipe_path (str): The path to the recipe file.
@@ -112,6 +267,11 @@ class Factory:
         loaded_recipes (list): A list of loaded recipes.
         exportation_formats (list): A list of exportation formats.
         models (Model): An instance of the Model class.
+        db_conn (sqlite3.Connection): A connection to the SQLite database.
+        db_cursor (sqlite3.Cursor): A cursor for the SQLite database.
+        batch_size (int): The batch size for parallel execution.
+        PERFORM_BENCHMARK (bool): A flag to enable benchmarking.
+
 
     Methods:
         decompose_commands(commands)
@@ -127,12 +287,20 @@ class Factory:
         load_images() 
         export_results() 
         export_grouped_results() 
-        execute_recipe() 
+        execute_recipe()
+        _get_binary_path()
+        _run_subprocess()
+        _process_results() 
         _execute_command() 
         execute_recipes_parallel()
     """
 
     def __init__(self):
+        """
+        Initializes the Factory object.
+        Raises:
+            FileNotFoundError: If any of the required files or folders are not found.
+        """
 
         if os.path.exists(UPLOAD_FOLDER_BUILD):
             self.upload_folder = UPLOAD_FOLDER_BUILD
@@ -171,7 +339,34 @@ class Factory:
         self.exportation_formats = self.load_exportation_formats()
         self.models = Model()
         self.db_conn = None
-        self.db_cursor = None
+        self.db_cursor = None 
+        self.batch_size = 50 # Batch size for parallel execution
+
+        if PERFORM_BENCHMARK: # Benchmarking flag
+            self.utils = Utils() 
+
+    @contextmanager
+    def change_directory(self, new_path):
+        """
+            Context manager to safely change directories.
+
+            This context manager allows you to safely change directories by temporarily changing the current working directory to the specified `new_path`. It ensures that the original working directory is restored after the code block inside the context manager is executed or an exception is raised.
+
+            Parameters:
+            - `new_path`: The new directory path to change to.
+
+            Usage:
+            new_path = '/caminho/para/novo/diretorio'
+            with change_directory(new_path):
+                # Code to be executed in the new directory.
+            
+        """
+        original_cwd = os.getcwd()
+        os.chdir(new_path)
+        try:
+            yield
+        finally:
+            os.chdir(original_cwd)
 
     def decompose_commands(self, commands):
         """
@@ -640,54 +835,149 @@ class Factory:
                 os.chdir(original_cwd)
         self.export_results(sequential_results)
     
+    def _get_binary_path(self, command):
+        """Find the correct binary path for the given command.
+
+        Args:
+            command (str): The command for which to find the binary path.
+
+        Returns:
+            tuple or None: A tuple containing the binary path and the corresponding directory path,
+            or None if the binary path could not be found.
+
+        Raises:
+            RuntimeError: If an error occurs while getting the binary path.
+        """
+        """Find the correct binary path for the given command."""
+        try:
+            if os.path.exists(MODELS_PATH_BUILD):
+                binary_path = os.path.join(os.path.abspath(MODELS_PATH_BUILD), command + ".exe")
+                if DEBUG:
+                    print(f"DEBUG - Changed directory to {MODELS_PATH_BUILD}")
+                return binary_path, MODELS_PATH_BUILD
+            elif os.path.exists(MODELS_PATH_DIST):
+                binary_path = os.path.join(os.path.abspath(MODELS_PATH_DIST), command + ".exe")
+                if DEBUG:
+                    print(f"DEBUG - Changed directory to {MODELS_PATH_DIST}")
+                return binary_path, MODELS_PATH_DIST
+            else:
+                return None, None
+        except Exception as e:
+            if DEBUG:
+                print(f"DEBUG - Error while getting binary path: {e}")
+            raise RuntimeError(f"FBIN1_P - Error while loading binary: {e}")
+
+    def _run_subprocess(self, binary_path, batch):
+        """Run the subprocess for a batch of images.
+
+        Args:
+            binary_path (str): The path to the binary executable.
+            batch (list): A list of image paths to process.
+
+        Returns:
+            list: A list of strings representing the output of the subprocess.
+
+        Raises:
+            subprocess.CalledProcessError: If the subprocess returns a non-zero exit status.
+
+        """
+        """Run the subprocess for a batch of images."""
+        try:
+            result = subprocess.check_output([binary_path] + batch)
+            return result.decode('utf-8').strip().split('\n')
+        except subprocess.CalledProcessError as e:
+            print(f"FRSB1 - Subprocess error: {e}")
+            raise e
+
+    def _process_results(self, result_lines, command):
+        """Process the result lines from the subprocess.
+
+        Args:
+            result_lines (list): List of strings containing the result lines.
+            command (str): The command used to generate the results.
+
+        Returns:
+            list: A list of tuples containing the processed results. Each tuple contains:
+                - image_filename (str): The filename of the image.
+                - command (str): The command used to generate the results.
+                - result_values (str): The processed result values.
+
+        """
+        """Process the result lines from the subprocess."""
+        results = []
+        for line in result_lines:
+            parts = line.split(" Result: ")
+            if len(parts) == 2:
+                image_filename = os.path.basename(parts[0].split(": ")[1]).strip(" -")
+                image_filename = os.path.splitext(image_filename)[0]
+                result_values = parts[1].replace('*', '').strip()
+                results.append((image_filename, command, result_values))
+                if DEBUG:
+                    print(f"DEBUG - Processed result for {image_filename}: {result_values}")
+        return results
+
     def _execute_command(self, command):
         """
         Executes a single command and returns the result, with compatibility for parallelized execution.
         
         Args:
             command (str): The command to be executed.
-
+        
         Returns:
-            tuple: (image_filename, command, result_values) or error message.
+            list: A list of tuples. Each tuple contains:
+                - image_filename (str): The filename of the image processed.
+                - command (str): The command that was executed.
+                - result_values (various): The result values from the command execution.
+                If an error occurs, the list will contain a single tuple with an error message.
+        
+        Raises:
+            Exception: If there is an error during the execution of the command.
+        
+
         """
         if DEBUG:
             print(f"DEBUG - Process {current_process().name} - Executing command {command}...")
-
-        original_cwd = os.getcwd()
-        binary_path = None
-
+    
         try:
-            if os.path.exists(MODELS_PATH_BUILD):
-                binary_path = os.path.join(os.path.abspath(MODELS_PATH_BUILD), command + ".exe")
-                os.chdir(MODELS_PATH_BUILD) 
-            elif os.path.exists(MODELS_PATH_DIST):
-                binary_path = os.path.join(os.path.abspath(MODELS_PATH_DIST), command + ".exe")
-                os.chdir(MODELS_PATH_DIST) 
-        except Exception as e:
-            return (f"FBIN1_P - Error while loading binary: {e}",)
-
-        if binary_path:
-            try:
-                image_path = list(self.images.values())
-                result = subprocess.check_output([binary_path] + image_path)
-                result = result.decode('utf-8').strip()
-                result_lines = result.split('\n')
-
-                results = []
-                for line in result_lines:
-                    parts = line.split(" Result: ")
-                    if len(parts) == 2:
-                        image_filename = os.path.basename(parts[0].split(": ")[1]).strip(" -")
-                        image_filename = os.path.splitext(image_filename)[0]
-                        result_values = parts[1].replace('*', '').strip()
-                        results.append((image_filename, command, result_values))
-                return results
-            except Exception as e:
-                return (f"FBIN2_P - Error while executing {command}: {e}",)
-            finally:
-                os.chdir(original_cwd)
-        else:
-            return (f"FBIN3_P Model {command} not found.",)
+            binary_path, models_path = self._get_binary_path(command)
+            if not binary_path:
+                if DEBUG:
+                    print(f"DEBUG - Model {command} not found.")
+                return [(f"FBIN3_P Model {command} not found.",)]
+    
+            image_paths = list(self.images.values())
+            results = []
+    
+            with self.change_directory(models_path):
+                for i in range(0, len(image_paths), self.batch_size):
+                    batch = image_paths[i:i + self.batch_size]
+                    if DEBUG:
+                        print(f"DEBUG - Processing batch {i // self.batch_size + 1}: {batch}")
+                    try:
+                        result_lines = self._run_subprocess(binary_path, batch)
+                        results.extend(self._process_results(result_lines, command))
+                    except Exception as e:
+                        if DEBUG:
+                            print(f"DEBUG - Error while executing {command} on batch, retrying with smaller batch: {e}")
+                        # Retry logic for smaller batch
+                        for j in range(i, i + self.batch_size, self.batch_size // 2):
+                            retry_batch = image_paths[j:j + self.batch_size // 2]
+                            if DEBUG:
+                                print(f"DEBUG - Retrying with smaller batch {j // (self.batch_size // 2) + 1}: {retry_batch}")
+                            try:
+                                result_lines = self._run_subprocess(binary_path, retry_batch)
+                                results.extend(self._process_results(result_lines, command))
+                            except Exception as retry_e:
+                                if DEBUG:
+                                    print(f"DEBUG - Error during retry: {retry_e}")
+                                results.append((f"FBIN2_P - Error while retrying smaller batch", retry_e))
+    
+        except Exception as outer_e:
+            if DEBUG:
+                print(f"DEBUG - Outer exception caught: {outer_e}")
+            return [("FBIN2_P - Outer exception caught", outer_e)]
+    
+        return results
 
     def execute_recipes_parallel(self):
         """
@@ -697,10 +987,31 @@ class Factory:
         Raises:
             None
         """
+
+        expected_images = len(self.images)
+        copied_images = set(os.listdir(self.upload_folder))
+
+        try:
+            wait_time = 0
+            while len(copied_images) < expected_images:
+                if DEBUG and wait_time % 2 == 0:
+                    missing_images = expected_images - len(copied_images)
+                    print(f"DEBUG - Waiting for images to be copied... {len(missing_images)} images remaining.")     # type: ignore
+                time.sleep(1)
+                wait_time += 1
+                copied_images = set(os.listdir(self.upload_folder))
+
+        except Exception as e:
+            print(f"FPAR2 - Error while waiting for images to be copied: {e}")
+            return e
+        
         if DEBUG:
             print("DEBUG - Executing recipes in parallel...")
 
         with Pool() as pool:
+            if PERFORM_BENCHMARK:
+                with self.utils.benchmark_time("Executing commands in parallel"):
+                    results = pool.map(self._execute_command, self.loaded_recipes)
             results = pool.map(self._execute_command, self.loaded_recipes)
 
         # Flatten results and handle errors
@@ -717,10 +1028,30 @@ class Factory:
 
         self.export_results(sequential_results)
 
-if __name__ == "__main__":
-    factory = Factory()
-    try:
-        factory.execute_recipes_parallel() 
-    except Exception as e:
-        print(f"FPAR_MASTER - Error while executing recipe using a paralellization, trying sequential: {e}")
-        factory.execute_recipe()
+def handle_parallel_recipes_execution(__name__, Factory):
+    """
+    Executes recipes in parallel or sequentially based on the current module name.
+
+    Args:
+        __name__ (str): The name of the current module.
+        Factory (class): The Factory class used to execute recipes.
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If an error occurs while executing recipes in parallel, it falls back to sequential execution.
+        KeyboardInterrupt: If the execution is interrupted by the user.
+
+    """
+    if __name__ == "__main__":
+        factory = Factory()
+        try:
+            factory.execute_recipes_parallel() 
+        except Exception as e:
+            print(f"FPAR_MASTER - Error while executing recipe using a paralellization, trying sequential: {e}")
+            factory.execute_recipe()
+        except KeyboardInterrupt:
+            print("FPAR_MASTER - Execution interrupted by user.")
+
+handle_parallel_recipes_execution(__name__, Factory)
