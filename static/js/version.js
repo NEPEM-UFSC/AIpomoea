@@ -6,7 +6,7 @@ ipcRenderer.on('version-response', (_event, version) => {
 
   const fetchLatestVersion = async () => {
     try {
-      const response = await fetch('https://nepemverse.vercel.app/latest-version/aipomoea');
+      const response = await fetch('https://nepemufsc.com/.netlify/functions/verser?project=AIpomoea');
       const data = await response.json();
       return data.latest_version;
     } catch (error) {
