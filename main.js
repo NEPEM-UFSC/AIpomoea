@@ -82,6 +82,7 @@ function CreateConfig() {
     "GENOTYPE_STANDART": "Matrix-Gen-Rep",
     "ENABLE_GENOTYPE": true,
     "ENABLE_DB": false,
+    "FORCE_MAXPERFORMANCE": false,
     "DB_PATH": " ",
     "DB_NAME": "aipomoea"
   };
@@ -105,6 +106,7 @@ function readConfig(response=false) {
       const genotype_standart = config.GENOTYPE_STANDART;
       const enable_genotype = config.ENABLE_GENOTYPE;
       const enable_batch = config.ENABLE_PHENOTYPE;
+      const force_maxperfomance =  config.FORCE_MAXPERFORMANCE;
       const enable_db = config.ENABLE_DB;
       const db_path = config.DB_PATH;
       const db_name = config.DB_NAME;
@@ -192,7 +194,7 @@ function createWindow () {
     mainWindow.loadFile('views/index.html')
   }
   logger.log({ level: 'info', message: 'Janela principal criada com sucesso.' });
-  mainWindow.setMenuBarVisibility(false)
+  mainWindow.setMenuBarVisibility(true)
   if (DEBUG){ mainWindow.webContents.openDevTools(); mainWindow.setMenuBarVisibility(true)}
 
   mainWindow.on('closed', () => {
