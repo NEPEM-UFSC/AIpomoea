@@ -23,6 +23,7 @@ ipcRenderer.on('version-response', (_event, version) => {
       if (latestVersion) {
         let currentVersion = await window.version;
         currentVersion = currentVersion.replace('Versao: ', '');
+        currentVersion = currentVersion.replace('-beta', '');
         const status = latestVersion === currentVersion ? 'atualizada' : 'desatualizada';
         const color = latestVersion === currentVersion ? 'brightgreen' : 'red';
   
