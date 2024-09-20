@@ -49,6 +49,7 @@ import time
 import sqlite3
 from contextlib import contextmanager
 from multiprocessing import Pool, current_process
+import concurrent.futures
 
 
 """
@@ -190,6 +191,7 @@ class Utils:
 
     def __init__(self):
         self.start_time = None
+        self.write_logs = True
 
     def benchmark(self):
         """
@@ -246,7 +248,11 @@ class Utils:
         finally:
             self.end_benchmark()
             if self.start_time is not None:
-                print(f"{description} completed in {time.time() - self.start_time:.6f} seconds.")
+                message = (f"{description} completed in {time.time() - self.start_time:.6f} seconds.")
+                print(message)
+                if self.write_logs:
+                    with open("benchmark.log", "a") as file:
+                        file.write(message + "\n")
             else:
                 print("Benchmark start time is not set.")
                 
@@ -937,46 +943,73 @@ class Factory:
         """
         if DEBUG:
             print(f"DEBUG - Process {current_process().name} - Executing command {command}...")
-    
+
         try:
+            config = self.load_config()
             binary_path, models_path = self._get_binary_path(command)
             if not binary_path:
                 if DEBUG:
                     print(f"DEBUG - Model {command} not found.")
                 return [(f"FBIN3_P Model {command} not found.",)]
-    
+
             image_paths = list(self.images.values())
             results = []
-    
+
             with self.change_directory(models_path):
-                for i in range(0, len(image_paths), self.batch_size):
-                    batch = image_paths[i:i + self.batch_size]
-                    if DEBUG:
-                        print(f"DEBUG - Processing batch {i // self.batch_size + 1}: {batch}")
-                    try:
-                        result_lines = self._run_subprocess(binary_path, batch)
-                        results.extend(self._process_results(result_lines, command))
-                    except Exception as e:
-                        if DEBUG:
-                            print(f"DEBUG - Error while executing {command} on batch, retrying with smaller batch: {e}")
-                        # Retry logic for smaller batch
-                        for j in range(i, i + self.batch_size, self.batch_size // 2):
-                            retry_batch = image_paths[j:j + self.batch_size // 2]
-                            if DEBUG:
-                                print(f"DEBUG - Retrying with smaller batch {j // (self.batch_size // 2) + 1}: {retry_batch}")
+                if config['FORCE_MAXPERFORMANCE']:
+                    # Process batches in parallel using ThreadPoolExecutor
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future_to_batch = {executor.submit(self._run_subprocess, binary_path, image_paths[i:i + self.batch_size]): i for i in range(0, len(image_paths), self.batch_size)}
+                        for future in concurrent.futures.as_completed(future_to_batch):
+                            batch_index = future_to_batch[future]
                             try:
-                                result_lines = self._run_subprocess(binary_path, retry_batch)
+                                result_lines = future.result()
                                 results.extend(self._process_results(result_lines, command))
-                            except Exception as retry_e:
+                            except Exception as e:
                                 if DEBUG:
-                                    print(f"DEBUG - Error during retry: {retry_e}")
-                                results.append((f"FBIN2_P - Error while retrying smaller batch", retry_e))
-    
+                                    print(f"DEBUG - Error while executing {command} on batch {batch_index}, retrying with smaller batch: {e}")
+                                # Retry logic for smaller batch
+                                for j in range(batch_index, batch_index + self.batch_size, self.batch_size // 2):
+                                    retry_batch = image_paths[j:j + self.batch_size // 2]
+                                    if DEBUG:
+                                        print(f"DEBUG - Retrying with smaller batch {j // (self.batch_size // 2) + 1}: {retry_batch}")
+                                    try:
+                                        result_lines = self._run_subprocess(binary_path, retry_batch)
+                                        results.extend(self._process_results(result_lines, command))
+                                    except Exception as retry_e:
+                                        if DEBUG:
+                                            print(f"DEBUG - Error during retry: {retry_e}")
+                                        raise RuntimeError(f"FBIN2_P - Error while retrying smaller batch: {retry_e}")
+                else:
+                    # Process batches sequentially
+                    for i in range(0, len(image_paths), self.batch_size):
+                        batch = image_paths[i:i + self.batch_size]
+                        if DEBUG:
+                            print(f"DEBUG - Processing batch {i // self.batch_size + 1}: {batch}")
+                        try:
+                            result_lines = self._run_subprocess(binary_path, batch)
+                            results.extend(self._process_results(result_lines, command))
+                        except Exception as e:
+                            if DEBUG:
+                                print(f"DEBUG - Error while executing {command} on batch, retrying with smaller batch: {e}")
+                            # Retry logic for smaller batch
+                            for j in range(i, i + self.batch_size, self.batch_size // 2):
+                                retry_batch = image_paths[j:j + self.batch_size // 2]
+                                if DEBUG:
+                                    print(f"DEBUG - Retrying with smaller batch {j // (self.batch_size // 2) + 1}: {retry_batch}")
+                                try:
+                                    result_lines = self._run_subprocess(binary_path, retry_batch)
+                                    results.extend(self._process_results(result_lines, command))
+                                except Exception as retry_e:
+                                    if DEBUG:
+                                        print(f"DEBUG - Error during retry: {retry_e}")
+                                    results.append((f"FBIN2_P - Error while retrying smaller batch", retry_e))
+
         except Exception as outer_e:
             if DEBUG:
                 print(f"DEBUG - Outer exception caught: {outer_e}")
             return [("FBIN2_P - Outer exception caught", outer_e)]
-    
+        
         return results
 
     def execute_recipes_parallel(self):
