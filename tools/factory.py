@@ -1,48 +1,3 @@
-"""
-FACTORY.PY - The Engine(monolith) of AIpomoea
-
-This file serves as the core engine behind AIpomoea, orchestrating the entire workflow of model execution,
-image processing, and result generation. It acts as the heart of the application, handling every step 
-from loading AI models to processing user-defined tasks, allowing the system to execute complex recipes 
-in an efficient and automated manner.
-
-Key responsibilities include:
-- **Loading models**: The file is responsible for dynamically loading pre-trained AI models from predefined
-  locations. It supports parallel processing for performance optimization, ensuring the models are
-  prepared and validated before use.
-  
-- **Executing recipes**: Recipes, which are sequences of commands defined by the user, are interpreted and 
-  executed in this file. The factory orchestrates the preprocessing, application of models, and post-processing 
-  to generate accurate results.
-  
-- **Parallel execution**: To maximize efficiency, multiple models can be executed in parallel. This reduces 
-  latency and increases throughput, particularly for larger datasets where multiple operations must be 
-  carried out simultaneously.
-
-- **Exporting results**: Once processing is complete, the factory manages the exportation of results in 
-  various formats as defined by the user. This includes the ability to group results by specific criteria 
-  (such as genotype-based sorting) and save them in multiple output formats.
-
-- **Handling custom configurations**: The factory adapts its execution based on user configurations, 
-  which can include custom preloading paths, export preferences, and special commands for fine-tuning 
-  the output.
-
-- **Automation**: The entire process from model loading to result generation is designed to be fully automated,
-  reducing manual intervention and allowing for batch processing of large datasets in a production environment.
-
-- **Scalability**: Built with scalability in mind, the factory.py file is adaptable to various hardware 
-  configurations, ensuring compatibility across different systems while maintaining performance.
-
-License: refer to the LICENSE file provided with the code for information on usage and redistribution rights.
-
-version: 0.4.1 - 14/10/2024
-"""
-
-import os
-import json
-import re
-import warnings
-warnings.filterwarnings("ignore")
 import pandas as pd
 import subprocess
 import time
@@ -50,64 +5,109 @@ import sqlite3
 from contextlib import contextmanager
 from multiprocessing import Pool, current_process
 import concurrent.futures
+import os
+import json
+import re
+import warnings
+warnings.filterwarnings("ignore")
 
+
+"""
+FACTORY.PY - The Engine(monolith) of AIpomoea
+
+This file serves as the core engine behind AIpomoea, orchestrating the entire workflow of model execution,
+image processing, and result generation. It acts as the heart of the application, handling every step
+from loading AI models to processing user-defined tasks, allowing the system to execute complex recipes
+in an efficient and automated manner.
+
+Key responsibilities include:
+- **Loading models**: The file is responsible for dynamically loading pre-trained AI models from predefined
+  locations. It supports parallel processing for performance optimization, ensuring the models are
+  prepared and validated before use.
+
+- **Executing recipes**: Recipes, which are sequences of commands defined by the user, are interpreted and
+  executed in this file. The factory orchestrates the preprocessing, application of models, and post-processing
+  to generate accurate results.
+
+- **Parallel execution**: To maximize efficiency, multiple models can be executed in parallel. This reduces
+  latency and increases throughput, particularly for larger datasets where multiple operations must be
+  carried out simultaneously.
+
+- **Exporting results**: Once processing is complete, the factory manages the exportation of results in
+  various formats as defined by the user. This includes the ability to group results by specific criteria
+  (such as genotype-based sorting) and save them in multiple output formats.
+
+- **Handling custom configurations**: The factory adapts its execution based on user configurations,
+  which can include custom preloading paths, export preferences, and special commands for fine-tuning
+  the output.
+
+- **Automation**: The entire process from model loading to result generation is designed to be fully automated,
+  reducing manual intervention and allowing for batch processing of large datasets in a production environment.
+
+- **Scalability**: Built with scalability in mind, the factory.py file is adaptable to various hardware
+  configurations, ensuring compatibility across different systems while maintaining performance.
+
+License: refer to the LICENSE file provided with the code for information on usage and redistribution rights.
+
+version: 0.4.1 - 14/10/2024
+"""
 
 """
 Development Flags:
 
-    DEBUG: 
+    DEBUG:
         - If True, debug messages will be printed to the console.
         - WARNING: The use of debug mode may produce false-positive error messages during client operation.
         - It is recommended to use debug mode only when running this file directly in a development environment.
-    
-    PERFORM_BENCHMARK: 
+
+    PERFORM_BENCHMARK:
         - If True, the time taken for the execution of each recipe will be logged.
         - This is useful for performance analysis and identifying bottlenecks in the processing pipeline.
 
 Current Development Status:
 
-    The code is fully functional, but still undergoing optimization for better performance. 
-    Significant improvements are in progress, particularly regarding error handling, exception management, 
+    The code is fully functional, but still undergoing optimization for better performance.
+    Significant improvements are in progress, particularly regarding error handling, exception management,
     and the implementation of new features.
 
     Key improvements underway include:
-    - **Error and Exception Handling**: The code is being updated to more gracefully manage errors, 
+    - **Error and Exception Handling**: The code is being updated to more gracefully manage errors,
       ensuring robustness and minimizing crashes during execution.
-    - **Refactoring**: The codebase is being refactored to enhance readability, maintainability, and scalability, 
+    - **Refactoring**: The codebase is being refactored to enhance readability, maintainability, and scalability,
       making it easier for developers to contribute and modify in future versions.
-    - **New Features**: Upcoming releases will introduce more advanced model execution methods, along with enhanced 
+    - **New Features**: Upcoming releases will introduce more advanced model execution methods, along with enhanced
       support for complex saving operations.
 
 Parallel Execution:
 
     - The code is now capable of executing recipes in parallel using the `multiprocessing.Pool` class, significantly
       reducing processing time for large datasets and enhancing overall efficiency.
-    - In the event of an error during parallel execution, the fallback mechanism will automatically switch to 
-      sequential execution using the `subprocess` module, ensuring that recipes complete even if parallelization 
+    - In the event of an error during parallel execution, the fallback mechanism will automatically switch to
+      sequential execution using the `subprocess` module, ensuring that recipes complete even if parallelization
       encounters issues.
 
 #TODOs:
 
-    - **Model Execution Method**: Implement a new model execution method to ensure backward compatibility 
+    - **Model Execution Method**: Implement a new model execution method to ensure backward compatibility
       with earlier versions of the code.
-    
-    - **Preprocessing Handling**: Improve handling for complex saving operations and pre-processing steps 
+
+    - **Preprocessing Handling**: Improve handling for complex saving operations and pre-processing steps
       (referred to as 'prepyrus') to allow for greater flexibility and control in batch processing.
-    
-    - **Database Connection**: Develop a more flexible and dynamic way to handle database connections, 
+
+    - **Database Connection**: Develop a more flexible and dynamic way to handle database connections,
       allowing compatibility with various database systems and configurations.
 
 Note:
-    Documentation is currently obfuscated in parts of the code. This will be improved in future commits 
+    Documentation is currently obfuscated in parts of the code. This will be improved in future commits
     to provide better clarity and guidance for developers.
 """
 
 DEBUG = False
 PERFORM_BENCHMARK = False
 
-pd.options.mode.chained_assignment = None # Suppress verbose warnings
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'} # Allowed image file extensions
-UPLOAD_FOLDER_BUILD = os.path.abspath('./uploads') 
+pd.options.mode.chained_assignment = None  # Suppress verbose warnings
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Allowed image file extensions
+UPLOAD_FOLDER_BUILD = os.path.abspath('./uploads')
 UPLOAD_FOLDER_DIST = os.path.abspath('./resources/app/uploads')
 RECIPE_PATH_BUILD = os.path.abspath('./recipe.json')
 RECIPE_PATH_DIST = os.path.abspath('./resources/app/recipe.json')
@@ -117,6 +117,7 @@ CONFIG_PATH_BUILD = os.path.abspath('./config.json')
 CONFIG_PATH_DIST = os.path.abspath('./resources/app/config.json')
 CUSTOM_PRELOADING_PATH_BUILD = os.path.abspath('./custom_preloading.json')
 CUSTOM_PRELOADING_PATH_DIST = os.path.abspath('./resources/app/custom_preloading.json')
+
 
 class Model:
     """
@@ -133,10 +134,10 @@ class Model:
     def __init__(self):
         self.models = {}
         try:
-            if os.path.exists(os.path.join(MODELS_PATH_BUILD,'models.json')):
-                self.models_file = os.path.join(MODELS_PATH_BUILD,'models.json')
-            elif os.path.exists(os.path.join(MODELS_PATH_DIST,'models.json')):
-                self.models_file = os.path.join(MODELS_PATH_DIST,'models.json')
+            if os.path.exists(os.path.join(MODELS_PATH_BUILD, 'models.json')):
+                self.models_file = os.path.join(MODELS_PATH_BUILD, 'models.json')
+            elif os.path.exists(os.path.join(MODELS_PATH_DIST, 'models.json')):
+                self.models_file = os.path.join(MODELS_PATH_DIST, 'models.json')
             else:
                 print("Models file not found.")
         except Exception as e:
@@ -161,7 +162,7 @@ class Model:
                     raise ValueError(f"invalid model name: {model['name']}")
                 self.model_definitions[model['name']] = model['path']
 
-    #TODO Add compatibility to work with tf.model execution as it was before if user wants to use it.
+    # TODO Add compatibility to work with tf.model execution as it was before if user wants to use it.
     # def exec_model(self, model_name):
     #     if model_name in self.model_definitions:
     #         self.models[model_name] = self.model_definitions[model_name]
@@ -169,9 +170,9 @@ class Model:
     #     else:
     #         raise ValueError(f"Model {model_name} not found.")
 
-
     def get_model(self, name):
         return self.models[name] if name in self.models else None
+
 
 class Utils:
     """
@@ -199,7 +200,7 @@ class Utils:
 
         Usage:
             benchmark()
-        
+
         Returns:
             None
         """
@@ -255,13 +256,14 @@ class Utils:
                         file.write(message + "\n")
             else:
                 print("Benchmark start time is not set.")
-                
+
+
 class Factory:
-    """    
+    """
     The Factory class is the core engine of the AIpomoea application, responsible for orchestrating the entire workflow...
-    since model execution, image processing, and result generation. 
+    since model execution, image processing, and result generation.
     It acts as the heart of the application, handling every step from loading AI models to processing user-defined tasks, allowing the system to execute complex recipes in an efficient and automated manner.
-    
+
     Attributes:
         upload_folder (str): The path to the upload folder.
         recipe_path (str): The path to the recipe file.
@@ -290,14 +292,14 @@ class Factory:
         exclude_only(values)
         load_export_separation()
         load_exportation_formats()
-        load_images() 
-        export_results() 
-        export_grouped_results() 
+        load_images()
+        export_results()
+        export_grouped_results()
         execute_recipe()
         _get_binary_path()
         _run_subprocess()
-        _process_results() 
-        _execute_command() 
+        _process_results()
+        _execute_command()
         execute_recipes_parallel()
     """
 
@@ -321,21 +323,21 @@ class Factory:
             self.recipe_path = RECIPE_PATH_DIST
         else:
             raise FileNotFoundError("FINIT2 - Recipe not found.")
-        
+
         if os.path.exists(CONFIG_PATH_BUILD):
             self.config_path = CONFIG_PATH_BUILD
         elif os.path.exists(CONFIG_PATH_DIST):
             self.config_path = CONFIG_PATH_DIST
         else:
             raise FileNotFoundError("FINIT3 - Config file not found.")
-        
+
         if os.path.exists(CUSTOM_PRELOADING_PATH_BUILD):
             self.custom_preloading_path = CUSTOM_PRELOADING_PATH_BUILD
         elif os.path.exists(CUSTOM_PRELOADING_PATH_DIST):
             self.custom_preloading_path = CUSTOM_PRELOADING_PATH_DIST
         else:
             raise FileNotFoundError("FINIT4 - Custom preloading file not found.")
-        
+
         self.SPECIAL_COMMANDS = ['csv', 'pdf', 'json', 'connected_database', 'cli_visible', "export_separation"]
         self.images = {}
         self.preloading()
@@ -345,11 +347,11 @@ class Factory:
         self.exportation_formats = self.load_exportation_formats()
         self.models = Model()
         self.db_conn = None
-        self.db_cursor = None 
-        self.batch_size = 50 # Batch size for parallel execution
+        self.db_cursor = None
+        self.batch_size = 50  # Batch size for parallel execution
 
-        if PERFORM_BENCHMARK: # Benchmarking flag
-            self.utils = Utils() 
+        if PERFORM_BENCHMARK:  # Benchmarking flag
+            self.utils = Utils()
 
     @contextmanager
     def change_directory(self, new_path):
@@ -365,7 +367,7 @@ class Factory:
             new_path = '/caminho/para/novo/diretorio'
             with change_directory(new_path):
                 # Code to be executed in the new directory.
-            
+
         """
         original_cwd = os.getcwd()
         os.chdir(new_path)
@@ -465,7 +467,7 @@ class Factory:
         Example:
             - self.load_recipe() -> ['command1', 'command2', 'command3']
         """
-        try: 
+        try:
             with open(self.recipe_path, 'r') as file:
                 content = json.load(file)
                 checkbox_states = content['checkboxStates']
@@ -474,7 +476,7 @@ class Factory:
         except Exception as e:
             print(f"FLRE1- Error while loading recipe: {e}")
             raise e
-    
+
     def load_custom_preloading(self):
         """
         Load custom preloading from a JSON file.
@@ -492,7 +494,7 @@ class Factory:
         except Exception as e:
             print(f"LCP1 - Error while loading custom preloading: {e}")
             raise e
-        
+
     def get_output_folder(self):
         """
         Retrieves the output folder directory from the configuration.
@@ -599,7 +601,7 @@ class Factory:
             checkbox_states = content['checkboxStates']
             export_separation = checkbox_states['export-separation']
             return export_separation
-        
+
     def load_exportation_formats(self):
         """
         Load exportation formats from a JSON file and return the decomposed special commands.
@@ -636,7 +638,7 @@ class Factory:
             print("FLI1 - Images not found.")
             return e
 
-    #TODO - Implementar um override, para que se uma imagem ja foi adcionada na tabela antes, novos dados sejam enviados para o mesmo segundo image_name.
+    # TODO - Implementar um override, para que se uma imagem ja foi adcionada na tabela antes, novos dados sejam enviados para o mesmo segundo image_name.
     def export_connecteddb(self, results):
         """
         Exports results to a connected database by adding any missing columns and inserting data.
@@ -652,11 +654,10 @@ class Factory:
         # Verificar se a conexão e o cursor do banco de dados estão definidos
         if not hasattr(self, 'db_cursor') or not hasattr(self, 'db_conn'):
             raise AttributeError("A conexão com o banco de dados não está definida.")
-    
+
         if self.db_cursor is None or self.db_conn is None:
             raise AttributeError("A conexão com o banco de dados não está definida.")
-        
-        
+
         # Obter o nome da tabela a partir da configuração
         config = self.load_config()
         table_name = config['DB_NAME']
@@ -675,7 +676,7 @@ class Factory:
             placeholders = ', '.join(['?'] * len(row))
             sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
             self.db_cursor.execute(sql, tuple(row))
-        
+
         # Confirmar alterações no banco de dados
         self.db_conn.commit()
 
@@ -721,7 +722,7 @@ class Factory:
             else:
                 for exportation_format in self.exportation_formats:
                     if exportation_format == 'csv':
-                        try: 
+                        try:
                             results_pd.to_csv(f'{output_folder}/results.csv', index=False)
                         except Exception as e:
                             print(f"FERS2 - Error while exporting to CSV: {e}")
@@ -729,7 +730,7 @@ class Factory:
                     elif exportation_format == 'json':
                         try:
                             results_json_list = [
-                                {"image": row["image"], **row.drop("image").to_dict()} 
+                                {"image": row["image"], **row.drop("image").to_dict()}
                                 for _, row in results_pd.iterrows()
                             ]
                             with open(f'{output_folder}/results.json', 'w') as json_file:
@@ -738,17 +739,18 @@ class Factory:
                             print(f"FERS2 - Error while exporting to JSON: {e}")
                             return e
                     if exportation_format == 'pdf':
-                        #WARNING - PDF exportation not implemented
-                        #Preparado para versões posteriores a 0.4.1
+                        # WARNING - PDF exportation not implemented
+                        # Preparado para versões posteriores a 0.4.1
                         pass
                     elif exportation_format == 'cli_visible':
-                        #! NOT MEAN TO WORK HERE
+                        # ! NOT MEAN TO WORK HERE
                         pass
-            print("done.") # STDOUT é exigido.
+            print("done.")  # STDOUT é exigido.
 
         except Exception as e:
             print(f"FERS1 - Error while exporting results: {e}")
-    
+            return e
+
     def export_grouped_results(self, base_name, grouped_results):
         """
         Export grouped results to different file formats.
@@ -777,7 +779,7 @@ class Factory:
                 elif exportation_format == 'json':
                     try:
                         results_json_list = [
-                            {"image": row["image"], **row.drop("image").to_dict()} 
+                            {"image": row["image"], **row.drop("image").to_dict()}
                             for _, row in results_pd.iterrows()
                         ]
                         with open(f'{output_folder}/results_{base_name.lower()}.json', 'w') as json_file:
@@ -795,21 +797,21 @@ class Factory:
             If an error occurs while executing a command, the exception is returned.
         """
         # Rest of the code...
-        if DEBUG: 
+        if DEBUG:
             print("DEBUG - Executing recipe...")
         sequential_results = []
-        original_cwd = os.getcwd() 
+        original_cwd = os.getcwd()
         for command in self.loaded_recipes:
-            if DEBUG: 
+            if DEBUG:
                 print(f"DEBUG - Executing command {command}...")
             binary_path = None
             try:
                 if os.path.exists(MODELS_PATH_BUILD):
                     binary_path = os.path.join(os.path.abspath(MODELS_PATH_BUILD), command + ".exe")
-                    os.chdir(MODELS_PATH_BUILD) 
+                    os.chdir(MODELS_PATH_BUILD)
                 elif os.path.exists(MODELS_PATH_DIST):
                     binary_path = os.path.join(os.path.abspath(MODELS_PATH_DIST), command + ".exe")
-                    os.chdir(MODELS_PATH_DIST) 
+                    os.chdir(MODELS_PATH_DIST)
             except Exception as e:
                 print(f"FBIN1 - Error while loading binary: {e}")
                 os.chdir(original_cwd)
@@ -833,14 +835,14 @@ class Factory:
                                 sequential_results.append((image_filename, command, result_values))
                     except Exception as e:
                         print(f"FBIN2 - Error while executing {command}: {e}")
-                        return e                   
+                        return e
                 finally:
                     os.chdir(original_cwd)
             else:
                 print(f"FBIN3 - Model {command} not found.")
                 os.chdir(original_cwd)
         self.export_results(sequential_results)
-    
+
     def _get_binary_path(self, command):
         """Find the correct binary path for the given command.
 
@@ -925,20 +927,20 @@ class Factory:
     def _execute_command(self, command):
         """
         Executes a single command and returns the result, with compatibility for parallelized execution.
-        
+
         Args:
             command (str): The command to be executed.
-        
+
         Returns:
             list: A list of tuples. Each tuple contains:
                 - image_filename (str): The filename of the image processed.
                 - command (str): The command that was executed.
                 - result_values (various): The result values from the command execution.
                 If an error occurs, the list will contain a single tuple with an error message.
-        
+
         Raises:
             Exception: If there is an error during the execution of the command.
-        
+
 
         """
         if DEBUG:
@@ -978,7 +980,9 @@ class Factory:
                                         results.extend(self._process_results(result_lines, command))
                                     except Exception as retry_e:
                                         if DEBUG:
-                                            print(f"DEBUG - Error during retry: {retry_e}")
+                                            print(
+                                                f"DEBUG - Error during retry: {retry_e}"
+                                            )
                                         raise RuntimeError(f"FBIN2_P - Error while retrying smaller batch: {retry_e}")
                 else:
                     # Process batches sequentially
@@ -1003,13 +1007,15 @@ class Factory:
                                 except Exception as retry_e:
                                     if DEBUG:
                                         print(f"DEBUG - Error during retry: {retry_e}")
-                                    results.append((f"FBIN2_P - Error while retrying smaller batch", retry_e))
+                                    results.append(
+                                        (f"FBIN2_P - Error while retrying smaller batch: {retry_e}",)
+                                    )
 
         except Exception as outer_e:
             if DEBUG:
                 print(f"DEBUG - Outer exception caught: {outer_e}")
             return [("FBIN2_P - Outer exception caught", outer_e)]
-        
+
         return results
 
     def execute_recipes_parallel(self):
@@ -1029,7 +1035,10 @@ class Factory:
             while len(copied_images) < expected_images:
                 if DEBUG and wait_time % 2 == 0:
                     missing_images = expected_images - len(copied_images)
-                    print(f"DEBUG - Waiting for images to be copied... {len(missing_images)} images remaining.")     # type: ignore
+                    print(
+                        f"DEBUG - Waiting for images to be copied... "
+                        f"{len(missing_images)} images remaining."  # type: ignore
+                    )  # type: ignore
                 time.sleep(1)
                 wait_time += 1
                 copied_images = set(os.listdir(self.upload_folder))
@@ -1037,7 +1046,7 @@ class Factory:
         except Exception as e:
             print(f"FPAR2 - Error while waiting for images to be copied: {e}")
             return e
-        
+
         if DEBUG:
             print("DEBUG - Executing recipes in parallel...")
 
@@ -1061,6 +1070,7 @@ class Factory:
 
         self.export_results(sequential_results)
 
+
 def handle_parallel_recipes_execution(__name__, Factory):
     """
     Executes recipes in parallel or sequentially based on the current module name.
@@ -1080,11 +1090,12 @@ def handle_parallel_recipes_execution(__name__, Factory):
     if __name__ == "__main__":
         factory = Factory()
         try:
-            factory.execute_recipes_parallel() 
+            factory.execute_recipes_parallel()
         except Exception as e:
             print(f"FPAR_MASTER - Error while executing recipe using a paralellization, trying sequential: {e}")
             factory.execute_recipe()
         except KeyboardInterrupt:
             print("FPAR_MASTER - Execution interrupted by user.")
+
 
 handle_parallel_recipes_execution(__name__, Factory)
