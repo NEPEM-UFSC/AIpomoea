@@ -22,7 +22,7 @@
   "license": "CC0-1.0",
   "devDependencies": {
     "@electron/packager": "^18.3.3",
-    "electron": "^31.2.0",
+    "electron": "^33.0.0",
     "electron-builder": "^24.13.3"
   },
   "dependencies": {
