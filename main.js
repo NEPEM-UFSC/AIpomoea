@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcRenderer } = require('electron')
-const path = require('node:path')
+const path = require('path')
 const fs = require('fs');
 const { ipcMain } = require('electron');
 const logger = require('./tools/logger');
@@ -297,33 +297,54 @@ ipcMain.on('request-version', (event) => {
 ipcMain.on('upload-image', (event, filePaths) => {
   // Registra uma mensagem de informaçao indicando que a imagem esta sendo recebida.
   logger.log({ level: 'info', message: 'Recebendo imagem.' });
+  logger.log({ level: 'debug', message: `Caminhos dos arquivos: ${filePaths}` });
+  if (filePaths.length === 0) {
+    logger.log({ level: 'error', message: 'Nenhuma imagem selecionada.' });
+    throw new Error('Nenhum caminho passado');
+  }
+  try {
+    // Verifique se filePaths é um array e não está vazio
+    if (Array.isArray(filePaths) && filePaths.length > 0) {
+      // Itera sobre os caminhos dos arquivos fornecidos.
+      filePaths.forEach((originalPath) => {
+        // Verifique se originalPath é uma string
+        if (typeof originalPath === 'string') {
+          // Obtem o nome do arquivo a partir do caminho original.
+          const filename = path.basename(originalPath);
+          
+          // Define o caminho onde a imagem sera salva.
+          const savePath = path.join(__dirname, 'uploads', filename);
   
-  // Itera sobre os caminhos dos arquivos fornecidos.
-  filePaths.forEach((originalPath) => {
-    // Obtem o nome do arquivo a partir do caminho original.
-    const filename = path.basename(originalPath);
-    
-    // Define o caminho onde a imagem sera salva.
-    const savePath = path.join(__dirname, 'uploads', filename);
-
-    // Copia o arquivo do caminho original para o caminho de salvamento.
-    fs.copyFile(originalPath, savePath, (err) => {
-      if (err) {
-        // Registra uma mensagem de erro se a copia falhar.
-        logger.log({ level: 'error', message: `Erro ao salvar a imagem: ${err}` });
-        
-        // Envia uma resposta de erro para o processo renderer.
-        event.sender.send('upload-image-response', 'Erro ao fazer upload da imagem.');
-        return;
-      }
-      
-      // Registra uma mensagem de sucesso se a imagem for salva com sucesso.
-      logger.log({ level: 'info', message: `Imagem salva com sucesso: ${savePath}` });
-      
-      // Envia uma resposta de sucesso para o processo renderer.
-      event.sender.send('upload-image-response', 'Imagem enviada com sucesso!');
-    });
-  });
+          // Copia o arquivo do caminho original para o caminho de salvamento.
+          fs.copyFile(originalPath, savePath, (err) => {
+            if (err) {
+              // Registra uma mensagem de erro se a copia falhar.
+              logger.log({ level: 'error', message: `Erro ao salvar a imagem: ${err}` });
+              
+              // Envia uma resposta de erro para o processo renderer.
+              event.sender.send('upload-image-response', 'Erro ao fazer upload da imagem.');
+              return;
+            }
+            
+            // Registra uma mensagem de sucesso se a imagem for salva com sucesso.
+            logger.log({ level: 'info', message: `Imagem salva com sucesso: ${savePath}` });
+            
+            // Envia uma resposta de sucesso para o processo renderer.
+            event.sender.send('upload-image-response', 'Imagem enviada com sucesso!');
+          });
+        } else {
+          // Registra uma mensagem de erro se originalPath não for uma string
+          logger.log({ level: 'error', message: 'Caminho do arquivo inválido: não é uma string.' });
+        }
+      });
+    } else {
+      // Registra uma mensagem de erro se filePaths não for um array ou estiver vazio
+      logger.log({ level: 'error', message: 'Nenhum caminho de arquivo fornecido ou caminho de arquivo inválido.' });
+    }
+  } catch (error) {
+    // Registra uma mensagem de erro se ocorrer um erro inesperado.
+    logger.log({ level: 'error', message: `Erro inesperado: ${error}` });
+  }
 });
 
 // Configura um listener para o evento 'run-factory' emitido do processo renderer.
