@@ -556,7 +556,7 @@ class Factory:
             None
         """
         try:
-            images = os.listdir(self.upload_folder)
+            images = self.load_images()
             allowed_images = set()
             for value in values:
                 allowed_images.update([i for i in images if i.startswith(value)])
@@ -566,6 +566,8 @@ class Factory:
             pass
         except Exception as e:
             print(f"FPL2 - Error while selecting images: {e}")
+            raise BaseException(e)
+        self.verify_preprocessed_images()
 
     def exclude_only(self, values):
         """
@@ -578,13 +580,30 @@ class Factory:
             None
         """
         try:
-            images = os.listdir(self.upload_folder)
+            images = self.load_images()
             for value in values:
                 for image in images:
                     if image.startswith(value):
                         os.remove(os.path.join(self.upload_folder, image))
+            pass
         except Exception as e:
-            print(f"FPL2 - Error while excluding images: {e}")
+            print(f"FPL3 - Error while excluding images: {e}")
+            raise BaseException(e)
+        self.verify_preprocessed_images()
+
+    def verify_preprocessed_images(self):
+        """Verify that images have been preprocessed.
+        Parameters:
+            - self: Instance of the class containing preprocessed images.
+        Returns:
+            - None: Raises FileNotFoundError if no images are found.
+        Example:
+            - verify_preprocessed_images() -> None
+        """
+        if not self.images:
+            print("FVPI1 - No images found.")
+            raise FileNotFoundError("FVPI1 - No images found.")
+        pass
 
     def load_export_separation(self):
         """
@@ -630,13 +649,34 @@ class Factory:
               instance.load_images() -> {'image1.jpg': 'uploads/image1.jpg', 'image2.png': 'uploads/image2.png'}
         """
         try:
+            if self.upload_folder is None:
+                print("FLI1 - Upload folder not found.")
+                raise FileNotFoundError("FLI1 - Images folder not found.")
+
+            if not isinstance(self.upload_folder, str):
+                print("FLI2 - Invalid upload folder path.")
+                raise ValueError("FLI2 - Invalid upload folder path.")
+
+            if not os.path.isdir(self.upload_folder):
+                print("FLI3 - Upload folder does not exist.")
+                raise FileNotFoundError("FLI3 - Upload folder does not exist.")
+
+            if not isinstance(self.images, dict):
+                print("FLI4 - Invalid images dictionary.")
+                raise ValueError("FLI4 - Invalid images dictionary.")
+
             for filename in os.listdir(self.upload_folder):
                 if filename.split('.')[-1].lower() in ALLOWED_EXTENSIONS:
                     self.images[filename] = os.path.join(self.upload_folder, filename)
+
+            if not self.images:
+                print("FLI5 - No images found.")
+                raise FileNotFoundError("FLI5 - No images found.")
+
             return self.images
         except Exception as e:
-            print("FLI1 - Images not found.")
-            return e
+            print("FLIBE - Error while loading images.")
+            raise e
 
     # TODO - Implementar um override, para que se uma imagem ja foi adcionada na tabela antes, novos dados sejam enviados para o mesmo segundo image_name.
     def export_connecteddb(self, results):
@@ -1038,7 +1078,7 @@ class Factory:
                     print(
                         f"DEBUG - Waiting for images to be copied... "
                         f"{len(missing_images)} images remaining."  # type: ignore
-                    )  # type: ignore
+                    )
                 time.sleep(1)
                 wait_time += 1
                 copied_images = set(os.listdir(self.upload_folder))
