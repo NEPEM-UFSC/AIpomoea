@@ -165,3 +165,4 @@ test/
 models.json
 static/views/layout/
 documentation/
+*.flake8
