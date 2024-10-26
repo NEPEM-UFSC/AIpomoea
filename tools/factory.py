@@ -91,7 +91,7 @@ Parallel Execution:
 """
 
 DEBUG = False
-PERFORM_BENCHMARK = True
+PERFORM_BENCHMARK = False
 
 pd.options.mode.chained_assignment = None  # Suppress SettingWithCopyWarning
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
