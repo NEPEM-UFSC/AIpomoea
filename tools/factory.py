@@ -3,11 +3,14 @@ import subprocess
 import time
 import sqlite3
 from contextlib import contextmanager
-from multiprocessing import Pool, current_process
+from multiprocessing import Pool, current_process, cpu_count
+import traceback
 import concurrent.futures
 import os
 import json
 import re
+from pathlib import Path
+from typing import Any, Dict, Tuple
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -49,7 +52,7 @@ Key responsibilities include:
 
 License: refer to the LICENSE file provided with the code for information on usage and redistribution rights.
 
-version: 0.4.1 - 14/10/2024
+version: 0.5.2 - 14/10/2024
 """
 
 """
@@ -85,39 +88,27 @@ Parallel Execution:
     - In the event of an error during parallel execution, the fallback mechanism will automatically switch to
       sequential execution using the `subprocess` module, ensuring that recipes complete even if parallelization
       encounters issues.
-
-#TODOs:
-
-    - **Model Execution Method**: Implement a new model execution method to ensure backward compatibility
-      with earlier versions of the code.
-
-    - **Preprocessing Handling**: Improve handling for complex saving operations and pre-processing steps
-      (referred to as 'prepyrus') to allow for greater flexibility and control in batch processing.
-
-    - **Database Connection**: Develop a more flexible and dynamic way to handle database connections,
-      allowing compatibility with various database systems and configurations.
-
-Note:
-    Documentation is currently obfuscated in parts of the code. This will be improved in future commits
-    to provide better clarity and guidance for developers.
 """
 
 DEBUG = False
-PERFORM_BENCHMARK = False
+PERFORM_BENCHMARK = True
 
-pd.options.mode.chained_assignment = None  # Suppress verbose warnings
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}  # Allowed image file extensions
-UPLOAD_FOLDER_BUILD = os.path.abspath('./uploads')
-UPLOAD_FOLDER_DIST = os.path.abspath('./resources/app/uploads')
-RECIPE_PATH_BUILD = os.path.abspath('./recipe.json')
-RECIPE_PATH_DIST = os.path.abspath('./resources/app/recipe.json')
-MODELS_PATH_BUILD = os.path.abspath('./models')
-MODELS_PATH_DIST = os.path.abspath('./resources/app/models')
-CONFIG_PATH_BUILD = os.path.abspath('./config.json')
-CONFIG_PATH_DIST = os.path.abspath('./resources/app/config.json')
-CUSTOM_PRELOADING_PATH_BUILD = os.path.abspath('./custom_preloading.json')
-CUSTOM_PRELOADING_PATH_DIST = os.path.abspath('./resources/app/custom_preloading.json')
+pd.options.mode.chained_assignment = None  # Suppress SettingWithCopyWarning
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+UPLOAD_FOLDER_BUILD = Path('./uploads').resolve()
+UPLOAD_FOLDER_DIST = Path('./resources/app/uploads').resolve()
+RECIPE_PATH_BUILD = Path('./recipe.json').resolve()
+RECIPE_PATH_DIST = Path('./resources/app/recipe.json').resolve()
+MODELS_PATH_BUILD = Path('./models').resolve()
+MODELS_PATH_DIST = Path('./resources/app/models').resolve()
+CONFIG_PATH_BUILD = Path('./config.json').resolve()
+CONFIG_PATH_DIST = Path('./resources/app/config.json').resolve()
+CUSTOM_PRELOADING_PATH_BUILD = Path('./custom_preloading.json').resolve()
+CUSTOM_PRELOADING_PATH_DIST = Path('./resources/app/custom_preloading.json').resolve()
 
+
+# TODO - Criar método de receber whitebg, para que não seja interpretado como comando, mas nem como formato de exportação, vamos corrigir essa budega.
+# TODO - Depois que recebido, ao fazer ops, verificar se ela for do tipo cor e então executar com "--whitebg" no subprocesso.
 
 class Model:
     """
@@ -257,6 +248,297 @@ class Utils:
             else:
                 print("Benchmark start time is not set.")
 
+    @contextmanager
+    def change_directory(self, new_path):
+        """
+            Context manager to safely change directories.
+
+            This context manager allows you to safely change directories by temporarily changing the current working directory to the specified `new_path`. It ensures that the original working directory is restored after the code block inside the context manager is executed or an exception is raised.
+
+            Parameters:
+            - `new_path`: The new directory path to change to.
+
+            Usage:
+            new_path = '/caminho/para/novo/diretorio'
+            with change_directory(new_path):
+                # Code to be executed in the new directory.
+
+        """
+        original_cwd = os.getcwd()
+        os.chdir(new_path)
+        try:
+            yield
+        finally:
+            os.chdir(original_cwd)
+
+
+class Recipe:
+    """
+    A class to manage the loading and processing of a recipe file.
+    """
+    def __init__(self):
+        """
+        Initializes the Recipe instance by setting the recipe path.
+        """
+        self.EXPORT_FORMATS = {'csv', 'json', 'pdf', 'connected_database'}
+        self.COMMANDS_SPEC = {'white_background', 'export_separation'}
+        self.recipe_path = self._determine_recipe_path()
+        if DEBUG:
+            print(f"DEBUG - Recipe path determined: {self.recipe_path}")
+
+    def _determine_recipe_path(self) -> Path:
+        """
+        Determines the path of the recipe file.
+
+        Returns:
+            Path: Path to the recipe file if it exists.
+
+        Raises:
+            FileNotFoundError: If the recipe file is not found in either path.
+        """
+        if RECIPE_PATH_BUILD.exists():
+            if DEBUG:
+                print(f"DEBUG - Using recipe path: {RECIPE_PATH_BUILD}")
+            return RECIPE_PATH_BUILD
+        elif RECIPE_PATH_DIST.exists():
+            if DEBUG:
+                print(f"DEBUG - Using recipe path: {RECIPE_PATH_DIST}")
+            return RECIPE_PATH_DIST
+        if DEBUG:
+            print("DEBUG - Recipe file not found in both paths.")
+        raise FileNotFoundError("FINIT2 - Recipe not found.")
+
+    def load_recipe(self) -> Dict[str, Any]:
+        """
+        Loads the recipe from a JSON file and separates it into commands, command specs,
+        and export formats.
+
+        Returns:
+            dict: Contains commands, commands_spec, and exportation_format.
+
+        Raises:
+            Exception: If there's an issue reading or parsing the recipe file.
+        """
+        try:
+            if DEBUG:
+                print(f"DEBUG - Loading recipe from path: {self.recipe_path}")
+            with self.recipe_path.open('r', encoding='utf-8') as file:
+                content = json.load(file)
+                if DEBUG:
+                    print(f"DEBUG - Recipe content loaded: {content}")
+                checkbox_states = content.get('checkboxStates', {})
+                if DEBUG:
+                    print(f"DEBUG - Checkbox states extracted: {checkbox_states}")
+                return self._process_recipe(checkbox_states)
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"FLRE1- Error while loading recipe: {e}")
+            raise
+
+    def _process_recipe(self, checkbox_states: Dict[str, bool]) -> Dict[str, Dict[str, bool]]:
+        """
+        Processes the checkbox states from the recipe, categorizing them into commands,
+        command specs, and export formats.
+
+        Args:
+            checkbox_states (dict): The raw checkbox states from the recipe file.
+
+        Returns:
+            dict: A dictionary with categorized commands, commands_spec, and exportation_format.
+        """
+        if DEBUG:
+            print(f"DEBUG - Processing checkbox states: {checkbox_states}")
+        commands, commands_spec, exportation_format = self._decompose_commands(checkbox_states)
+        if DEBUG:
+            print(f"DEBUG - Commands: {commands}")
+            print(f"DEBUG - Command specs: {commands_spec}")
+            print(f"DEBUG - Exportation formats: {exportation_format}")
+        return {
+            "commands": commands,
+            "commands_spec": commands_spec,
+            "exportation_format": exportation_format
+        }
+
+    def _decompose_commands(self, commands: Dict[str, bool]) -> Tuple[Dict[str, bool], Dict[str, bool], Dict[str, bool]]:
+        """
+        Decomposes commands into three categories:
+        - Commands for general commands,
+        - Commands_spec for special configurations,
+        - Exportation_format for export-specific commands.
+
+        Args:
+            commands (dict): The raw commands from the recipe file.
+
+        Returns:
+            tuple: Contains dictionaries of commands, commands_spec, and exportation_format.
+        """
+        general_commands = {}
+        command_specs = {}
+        export_formats = {}
+        for command, value in commands.items():
+            normalized_command = command.replace("-", "_")
+            if normalized_command in self.EXPORT_FORMATS:
+                export_formats[normalized_command] = value
+            elif normalized_command in self.COMMANDS_SPEC:
+                command_specs[normalized_command] = value
+            else:
+                general_commands[normalized_command] = value
+        if DEBUG:
+            print(f"DEBUG - Decomposed commands: {general_commands}")
+            print(f"DEBUG - Decomposed command specs: {command_specs}")
+            print(f"DEBUG - Decomposed export formats: {export_formats}")
+        return general_commands, command_specs, export_formats
+
+
+class ResultsExporter:
+    def __init__(self, exportation_formats, output_folder, separate_exports=False):
+        """
+        Initializes the ResultsExporter with export formats and output folder.
+        Parameters:
+            - exportation_formats (dict): Dictionary specifying formats for export (e.g., {'csv': True, 'json': True}).
+            - output_folder (str): Path to the folder where results will be saved.
+            - separate_exports (bool): Flag to indicate if exports should be separated by image groups.
+        """
+        self.exportation_formats = exportation_formats
+        self.output_folder = output_folder
+        self.separate_exports = separate_exports
+
+    def export_results(self, results_dict):
+        """
+        Main method to export results in specified formats.
+        Parameters:
+            - results_dict (dict): Results to export, keyed by image names with associated data.
+        """
+        try:
+            if DEBUG:
+                print("DEBUG - Starting export_results method.")
+                print(f"DEBUG - Results to export: {results_dict}")
+
+            # Group results by base name if separate_exports is enabled
+            if self.separate_exports:
+                if DEBUG:
+                    print("DEBUG - separate_exports is enabled. Grouping results by base name.")
+                separated_results = self._group_results_by_base(results_dict)
+                if DEBUG:
+                    print(f"DEBUG - Grouped results: {separated_results}")
+                if separated_results:
+                    for base_name, grouped_results in separated_results.items():
+                        if DEBUG:
+                            print(f"DEBUG - Exporting results for base name: {base_name}")
+                        self._export_to_formats(base_name, grouped_results)
+            else:
+                # Non-separated export
+                if DEBUG:
+                    print("DEBUG - separate_exports is not enabled. Exporting all results together.")
+                self._export_to_formats("results", results_dict)
+        except Exception as e:
+            print(f"REXEXR1 - Error while exporting results: {e}")
+            return e
+
+    def _group_results_by_base(self, results_dict):
+        """
+        Groups results by the base name of each image.
+        Parameters:
+            - results_dict (dict): Original results dictionary keyed by image names.
+        Returns:
+            - dict: Dictionary where each key is a base name, and each value is a dictionary of results.
+        """
+        try:
+            separated_results = {}
+            for image, data in results_dict.items():
+                base_name = image.split('_')[0].split('-')[0]
+                if base_name not in separated_results:
+                    separated_results[base_name] = {}
+                separated_results[base_name][image] = data
+            return separated_results
+        except Exception as e:
+            print(f"GRBB1 - Error while grouping results by base: {e}")
+            raise e
+
+    def _export_to_formats(self, base_name, results_data):
+        """
+        Exports data in all specified formats (CSV, JSON).
+        Parameters:
+            - base_name (str): Name to use as the base of the output filename.
+            - results_data (dict): Dictionary of results keyed by image with associated data.
+        """
+        try:
+            if DEBUG:
+                print(f"DEBUG - Exporting results for base name: {base_name}")
+                print(f"DEBUG - Results data structure: {results_data}")
+
+            # Adjust the list comprehension to handle possible format inconsistencies
+            rows = []
+            for image, data in results_data.items():
+                if isinstance(data, dict):  # Ensure data is a dictionary to avoid unpack errors
+                    for model, result in data.items():
+                        rows.append((image, model, result))
+                else:
+                    print(f"REXFOR3 - Unexpected data format for image {image}: {data}")
+
+            # Convert rows to DataFrame if not empty
+            if rows:
+                results_df = pd.DataFrame(rows, columns=['image', 'model', 'result']).pivot(
+                    index='image', columns='model', values='result'
+                ).reset_index()
+
+                if DEBUG:
+                    print("DEBUG - DataFrame created for export:")
+                    print(results_df.head())
+
+                try:
+                    # Export results to all enabled formats
+                    for format_name, enabled in self.exportation_formats.items():
+                        if enabled:
+                            export_method = getattr(self, f"_export_to_{format_name}", None)
+                            if export_method:
+                                try:
+                                    export_method(base_name, results_df)
+                                except Exception as e:
+                                    print(f"REXFOR2 - Error while exporting {base_name} to {format_name.upper()}: {e}")
+                                    traceback.print_exc()
+                                    raise e
+                except Exception as e:
+                    print(f"REXFOR5 - Error while exporting results: {e}")
+                    traceback.print_exc()
+                    raise e
+            else:
+                print(f"REXFOR4 - No valid data to export for base name {base_name}")
+                raise ValueError(f"No valid data to export for base name {base_name}")
+
+        except Exception as e:
+            print(f"REXFOR1 - Error while exporting results: {e}")
+            traceback.print_exc()
+            raise e
+
+    def _export_to_csv(self, base_name, results_df):
+        """
+        Exports results DataFrame to a CSV file.
+        Parameters:
+            - base_name (str): Name to use as the base of the output filename.
+            - results_df (pd.DataFrame): DataFrame containing the results.
+        """
+        try:
+            results_df.to_csv(f"{self.output_folder}/{base_name.lower()}.csv", index=False)
+        except Exception as e:
+            print(f"CSVEX - Error while exporting {base_name} to CSV: {e}")
+
+    def _export_to_json(self, base_name, results_df):
+        """
+        Exports results DataFrame to a JSON file.
+        Parameters:
+            - base_name (str): Name to use as the base of the output filename.
+            - results_df (pd.DataFrame): DataFrame containing the results.
+        """
+        try:
+            results_json_list = [
+                {"image": row["image"], **row.drop("image").to_dict()}
+                for _, row in results_df.iterrows()
+            ]
+            with open(f"{self.output_folder}/{base_name.lower()}.json", 'w') as json_file:
+                json.dump(results_json_list, json_file, indent=4)
+        except Exception as e:
+            print(f"JSONEX - Error while exporting {base_name} to JSON: {e}")
+
 
 class Factory:
     """
@@ -266,7 +548,6 @@ class Factory:
 
     Attributes:
         upload_folder (str): The path to the upload folder.
-        recipe_path (str): The path to the recipe file.
         config_path (str): The path to the config file.
         custom_preloading_path (str): The path to the custom preloading file.
         SPECIAL_COMMANDS (list): A list of special commands.
@@ -282,10 +563,7 @@ class Factory:
 
 
     Methods:
-        decompose_commands(commands)
-        decompose_special_commands(commands)
         load_config()
-        load_recipe()
         load_custom_preloading()
         preloading()
         select_only(values)
@@ -310,41 +588,40 @@ class Factory:
             FileNotFoundError: If any of the required files or folders are not found.
         """
 
-        if os.path.exists(UPLOAD_FOLDER_BUILD):
+        if (UPLOAD_FOLDER_BUILD).exists():
             self.upload_folder = UPLOAD_FOLDER_BUILD
-        elif os.path.exists(UPLOAD_FOLDER_DIST):
+        elif (UPLOAD_FOLDER_DIST).exists():
             self.upload_folder = UPLOAD_FOLDER_DIST
         else:
+            if DEBUG:
+                print("DEBUG - Upload folder not found.")
+                print(f"DEBUG - nor {UPLOAD_FOLDER_BUILD} or {UPLOAD_FOLDER_DIST} exists.")
             raise FileNotFoundError("FINIT1 - Images folder not found.")
 
-        if os.path.exists(RECIPE_PATH_BUILD):
-            self.recipe_path = RECIPE_PATH_BUILD
-        elif os.path.exists(RECIPE_PATH_DIST):
-            self.recipe_path = RECIPE_PATH_DIST
-        else:
-            raise FileNotFoundError("FINIT2 - Recipe not found.")
+        recipe = Recipe()
+        recipe_content = recipe.load_recipe()
+        self.commands = recipe_content['commands']
+        self.commands_spec = recipe_content['commands_spec']
+        self.exportation_formats = recipe_content['exportation_format']
 
-        if os.path.exists(CONFIG_PATH_BUILD):
+        if (CONFIG_PATH_BUILD).exists():
             self.config_path = CONFIG_PATH_BUILD
-        elif os.path.exists(CONFIG_PATH_DIST):
+        elif (CONFIG_PATH_DIST).exists():
             self.config_path = CONFIG_PATH_DIST
         else:
             raise FileNotFoundError("FINIT3 - Config file not found.")
 
-        if os.path.exists(CUSTOM_PRELOADING_PATH_BUILD):
+        if (CUSTOM_PRELOADING_PATH_BUILD).exists():
             self.custom_preloading_path = CUSTOM_PRELOADING_PATH_BUILD
-        elif os.path.exists(CUSTOM_PRELOADING_PATH_DIST):
+        elif (CUSTOM_PRELOADING_PATH_DIST).exists():
             self.custom_preloading_path = CUSTOM_PRELOADING_PATH_DIST
         else:
             raise FileNotFoundError("FINIT4 - Custom preloading file not found.")
 
-        self.SPECIAL_COMMANDS = ['csv', 'pdf', 'json', 'connected_database', 'cli_visible', "export_separation"]
         self.images = {}
         self.preloading()
         self.load_images()
         self.results = pd.DataFrame()
-        self.loaded_recipes = self.load_recipe()
-        self.exportation_formats = self.load_exportation_formats()
         self.models = Model()
         self.db_conn = None
         self.db_cursor = None
@@ -352,56 +629,6 @@ class Factory:
 
         if PERFORM_BENCHMARK:  # Benchmarking flag
             self.utils = Utils()
-
-    @contextmanager
-    def change_directory(self, new_path):
-        """
-            Context manager to safely change directories.
-
-            This context manager allows you to safely change directories by temporarily changing the current working directory to the specified `new_path`. It ensures that the original working directory is restored after the code block inside the context manager is executed or an exception is raised.
-
-            Parameters:
-            - `new_path`: The new directory path to change to.
-
-            Usage:
-            new_path = '/caminho/para/novo/diretorio'
-            with change_directory(new_path):
-                # Code to be executed in the new directory.
-
-        """
-        original_cwd = os.getcwd()
-        os.chdir(new_path)
-        try:
-            yield
-        finally:
-            os.chdir(original_cwd)
-
-    def decompose_commands(self, commands):
-        """
-        Decomposes a dictionary of commands to remove special commands and adjust formatting.
-        Parameters:
-            - commands (dict): Dictionary where keys are command strings and values specify the associated values.
-        Returns:
-            - list: List of filtered and formatted command keys.
-        Example:
-            - decompose_commands({"cmd-1": "value1", "cmd-2": None, "SPECIAL_COMMAND1": "value3"}) -> ["cmd_1"]
-        """
-        decomposed_commands = {command.replace("-", "_"): value for command, value in commands.items() if value}
-        decomposed_commands = {command: value for command, value in decomposed_commands.items() if command not in self.SPECIAL_COMMANDS}
-        return list(decomposed_commands.keys())
-
-    def decompose_special_commands(self, commands):
-        """
-        Extract special commands from a dictionary and return their keys.
-        Parameters:
-            - commands (dict): Dictionary containing command keys and their boolean values.
-        Returns:
-            - list: List of keys from the dictionary that are in the SPECIAL_COMMANDS set and have True as their value.
-        Example:
-            - decompose_special_commands({"special-command1": True, "normal-command": False, "special-command2": True}) -> ['special_command1', 'special_command2']
-        """
-        special_commands = {command.replace("-", "_"): value for command, value in commands.items() if value and command.replace("-", "_") in self.SPECIAL_COMMANDS}
-        return list(special_commands.keys())
 
     def load_config(self):
         """
@@ -433,10 +660,10 @@ class Factory:
         """
         config = self.load_config()
         if config['ENABLE_DB']:
-            db_path = config['DB_PATH']
+            db_path = Path(config['DB_PATH'])
             db_name = config['DB_NAME']
 
-            if not os.path.exists(db_path):
+            if not (db_path).exists():
                 raise FileNotFoundError("FDB3 - Database not found.")
             try:
                 conn = sqlite3.connect(db_path)
@@ -456,26 +683,6 @@ class Factory:
             except Exception as e:
                 print(f"FDB1 - Error while loading database: {e}")
                 raise e
-
-    def load_recipe(self):
-        """
-        Load the recipe from a JSON file and decompose its commands.
-        Parameters:
-            - self (object): Instance of the class containing the recipe_path attribute.
-        Returns:
-            - list: A list of decomposed commands extracted from the JSON file.
-        Example:
-            - self.load_recipe() -> ['command1', 'command2', 'command3']
-        """
-        try:
-            with open(self.recipe_path, 'r') as file:
-                content = json.load(file)
-                checkbox_states = content['checkboxStates']
-                commands = self.decompose_commands(checkbox_states)
-                return commands
-        except Exception as e:
-            print(f"FLRE1- Error while loading recipe: {e}")
-            raise e
 
     def load_custom_preloading(self):
         """
@@ -605,38 +812,6 @@ class Factory:
             raise FileNotFoundError("FVPI1 - No images found.")
         pass
 
-    def load_export_separation(self):
-        """
-        Load the export-separation value from the recipe file.
-        Parameters:
-            - self (object): The instance of the class containing the method.
-        Returns:
-            - bool: The state of the 'export-separation' checkbox.
-        Example:
-            - load_export_separation() -> True
-        """
-        with open(self.recipe_path, 'r') as file:
-            content = json.load(file)
-            checkbox_states = content['checkboxStates']
-            export_separation = checkbox_states['export-separation']
-            return export_separation
-
-    def load_exportation_formats(self):
-        """
-        Load exportation formats from a JSON file and return the decomposed special commands.
-        Parameters:
-            - self (object): Instance of the class containing the method.
-        Returns:
-            - list: Decomposed special commands from the checkbox states in the JSON file.
-        Example:
-            - load_exportation_formats() -> ['format1', 'format2', 'format3']
-        """
-        with open(self.recipe_path, 'r') as file:
-            content = json.load(file)
-            checkbox_states = content['checkboxStates']
-            exportation_formats = self.decompose_special_commands(checkbox_states)
-            return exportation_formats
-
     def load_images(self):
         """
         Load images from a specified upload folder and store them in a dictionary.
@@ -653,17 +828,9 @@ class Factory:
                 print("FLI1 - Upload folder not found.")
                 raise FileNotFoundError("FLI1 - Images folder not found.")
 
-            if not isinstance(self.upload_folder, str):
-                print("FLI2 - Invalid upload folder path.")
-                raise ValueError("FLI2 - Invalid upload folder path.")
-
-            if not os.path.isdir(self.upload_folder):
-                print("FLI3 - Upload folder does not exist.")
-                raise FileNotFoundError("FLI3 - Upload folder does not exist.")
-
             if not isinstance(self.images, dict):
                 print("FLI4 - Invalid images dictionary.")
-                raise ValueError("FLI4 - Invalid images dictionary.")
+                raise ValueError("FLI2 - Invalid images dictionary.")
 
             for filename in os.listdir(self.upload_folder):
                 if filename.split('.')[-1].lower() in ALLOWED_EXTENSIONS:
@@ -671,7 +838,7 @@ class Factory:
 
             if not self.images:
                 print("FLI5 - No images found.")
-                raise FileNotFoundError("FLI5 - No images found.")
+                raise FileNotFoundError("FLI3 - No images found.")
 
             return self.images
         except Exception as e:
@@ -724,110 +891,44 @@ class Factory:
         """
         Exports the given results in various formats such as CSV or JSON based on specified exportation formats.
         Parameters:
-            - self (object): An instance of the class containing this method, which includes configuration for export formats.
             - results (list of tuples): A list where each tuple contains an image identifier, a model identifier, and the corresponding result.
         Returns:
-            - None: This function does not return any value, it performs export operations and logs the status.
+            - None: This function does not return any value; it performs export operations and logs the status.
         Example:
-            - export_results(self, [('image1', 'modelA', 'result1'), ('image2', 'modelB', 'result2')]) -> None
+            - export_results([('image1', 'modelA', 0.95), ('image2', 'modelB', 0.88)])
         """
         output_folder = self.get_output_folder()
         if DEBUG:
             print(f"DEBUG - Output_folder: {output_folder}")
-        separate_exports = self.load_export_separation()
-        try:
-            results_dict = {}
-            results_pd = pd.DataFrame()
-            for image, model, result in results:
-                if image not in results_dict:
-                    results_dict[image] = {}
-                results_dict[image][model] = result
 
-            results_pd = pd.DataFrame.from_dict(results_dict, orient='index').reset_index()
-            results_pd.rename(columns={'index': 'image'}, inplace=True)
-            if 'connected_database' in self.exportation_formats:
-                self.load_database()
-                self.export_connecteddb(results_pd)
-            if separate_exports:
-                separated_results = {}
-                for image, data in results_dict.items():
-                    base_name = image.split('_')[0].split('-')[0]
-                    if base_name not in separated_results:
-                        separated_results[base_name] = []
-                    separated_results[base_name].append((image, data))
+        separate_exports = self.commands_spec.get('export_separation', False)
 
-                for base_name, grouped_results in separated_results.items():
-                    self.export_grouped_results(base_name, grouped_results)
+        results_dict = {}
+        for image, model, result in results:
+            if image not in results_dict:
+                results_dict[image] = {}
+            results_dict[image][model] = result
 
-            else:
-                for exportation_format in self.exportation_formats:
-                    if exportation_format == 'csv':
-                        try:
-                            results_pd.to_csv(f'{output_folder}/results.csv', index=False)
-                        except Exception as e:
-                            print(f"FERS2 - Error while exporting to CSV: {e}")
-                            return e
-                    elif exportation_format == 'json':
-                        try:
-                            results_json_list = [
-                                {"image": row["image"], **row.drop("image").to_dict()}
-                                for _, row in results_pd.iterrows()
-                            ]
-                            with open(f'{output_folder}/results.json', 'w') as json_file:
-                                json.dump(results_json_list, json_file, indent=4)
-                        except Exception as e:
-                            print(f"FERS2 - Error while exporting to JSON: {e}")
-                            return e
-                    if exportation_format == 'pdf':
-                        # WARNING - PDF exportation not implemented
-                        # Preparado para versões posteriores a 0.4.1
-                        pass
-                    elif exportation_format == 'cli_visible':
-                        # ! NOT MEAN TO WORK HERE
-                        pass
-            print("done.")  # STDOUT é exigido.
+        results_pd = pd.DataFrame.from_dict(results_dict, orient='index').reset_index()
+        results_pd.rename(columns={'index': 'image'}, inplace=True)
 
-        except Exception as e:
-            print(f"FERS1 - Error while exporting results: {e}")
-            return e
+        if self.exportation_formats.get('connected_database', False):
+            self.load_database()
+            self.export_connecteddb(results_pd)
 
-    def export_grouped_results(self, base_name, grouped_results):
-        """
-        Export grouped results to different file formats.
-        Parameters:
-            - base_name (str): The base name for the export files.
-            - grouped_results (dict): A dictionary containing grouped results where the key is an image and the value is another dictionary with the model as the key and the result as the value.
-        Returns:
-            - None: The function does not return any value but saves the results to files.
-        Example:
-            - export_grouped_results("experiment1", {"image1": {"modelA": 0.95, "modelB": 0.88}, "image2": {"modelA": 0.75, "modelB": 0.85}}) -> None
-        """
-        output_folder = self.get_output_folder()
-        try:
-            results_pd = pd.DataFrame(
-                [(image, model, result) for image, data in grouped_results for model, result in data.items()],
-                columns=['image', 'model', 'result']
-            ).pivot(index='image', columns='model', values='result').reset_index()
+        if DEBUG:
+            print(f"DEBUG - Exporting results: {results_dict}")
+            print("DEBUG - Calling ResultsExporter with those parameters:")
+            print(f"DEBUG - Exportation formats: {self.exportation_formats}")
+            print(f"DEBUG - Output folder: {output_folder}")
+            print(f"DEBUG - Separate exports: {separate_exports}")
 
-            for exportation_format in self.exportation_formats:
-                if exportation_format == 'csv':
-                    try:
-                        results_pd.to_csv(f'{output_folder}/results_{base_name.lower()}.csv', index=False)
-                    except Exception as e:
-                        print(f"FEGR2 - Error while exporting {base_name} to CSV: {e}")
-                        raise e
-                elif exportation_format == 'json':
-                    try:
-                        results_json_list = [
-                            {"image": row["image"], **row.drop("image").to_dict()}
-                            for _, row in results_pd.iterrows()
-                        ]
-                        with open(f'{output_folder}/results_{base_name.lower()}.json', 'w') as json_file:
-                            json.dump(results_json_list, json_file, indent=4)
-                    except Exception as e:
-                        print(f"FEGR2 - Error while exporting {base_name} to JSON: {e}")
-        except Exception as e:
-            print(f"FEGR1 - Error while exporting grouped results: {e}")
+        exporter = ResultsExporter(
+            exportation_formats=self.exportation_formats,
+            output_folder=output_folder,
+            separate_exports=separate_exports
+        )
+        exporter.export_results(results_dict)
 
     def execute_recipe(self):
         """
@@ -841,47 +942,59 @@ class Factory:
             print("DEBUG - Executing recipe...")
         sequential_results = []
         original_cwd = os.getcwd()
-        for command in self.loaded_recipes:
-            if DEBUG:
-                print(f"DEBUG - Executing command {command}...")
-            binary_path = None
-            try:
-                if os.path.exists(MODELS_PATH_BUILD):
-                    binary_path = os.path.join(os.path.abspath(MODELS_PATH_BUILD), command + ".exe")
-                    os.chdir(MODELS_PATH_BUILD)
-                elif os.path.exists(MODELS_PATH_DIST):
-                    binary_path = os.path.join(os.path.abspath(MODELS_PATH_DIST), command + ".exe")
-                    os.chdir(MODELS_PATH_DIST)
-            except Exception as e:
-                print(f"FBIN1 - Error while loading binary: {e}")
-                os.chdir(original_cwd)
-                return e
-
-            if binary_path:
-                try:
-                    image_path = list(self.images.values())
+        try:
+            for command, value in self.commands.items():
+                if value:
+                    if DEBUG:
+                        print(f"DEBUG - Executing command {command}...")
+                    binary_path = None
                     try:
-                        if DEBUG:
-                            print(f"DEBUG - Executing BIN of {command}...")
-                        result = subprocess.check_output([binary_path] + image_path)
-                        result = result.decode('utf-8').strip()
-                        result_lines = result.split('\n')
-                        for line in result_lines:
-                            parts = line.split(" Result: ")
-                            if len(parts) == 2:
-                                image_filename = os.path.basename(parts[0].split(": ")[1]).strip(" -")
-                                image_filename = os.path.splitext(image_filename)[0]
-                                result_values = parts[1].replace('*', '').strip()
-                                sequential_results.append((image_filename, command, result_values))
+                        if (MODELS_PATH_BUILD).exists():
+                            binary_path = os.path.join(Path(MODELS_PATH_BUILD).resolve(), command + ".exe")
+                            os.chdir(MODELS_PATH_BUILD)
+                        elif (MODELS_PATH_DIST).exists():
+                            binary_path = os.path.join(Path(MODELS_PATH_DIST).resolve(), command + ".exe")
+                            os.chdir(MODELS_PATH_DIST)
                     except Exception as e:
-                        print(f"FBIN2 - Error while executing {command}: {e}")
+                        print(f"FBIN1 - Error while loading binary: {e}")
+                        os.chdir(original_cwd)
                         return e
-                finally:
-                    os.chdir(original_cwd)
-            else:
-                print(f"FBIN3 - Model {command} not found.")
-                os.chdir(original_cwd)
-        self.export_results(sequential_results)
+
+                    if binary_path:
+                        try:
+                            image_path = list(self.images.values())
+                            try:
+                                if DEBUG:
+                                    print(f"DEBUG - Executing BIN of {command}...")
+                                result = subprocess.check_output([binary_path] + image_path)
+                                result = result.decode('utf-8').strip()
+                                result_lines = result.split('\n')
+                                for line in result_lines:
+                                    parts = line.split(" Result: ")
+                                    if len(parts) == 2:
+                                        image_filename = os.path.basename(parts[0].split(": ")[1]).strip(" -")
+                                        image_filename = os.path.splitext(image_filename)[0]
+                                        result_values = parts[1].replace('*', '').strip()
+                                        sequential_results.append((image_filename, command, result_values))
+                            except Exception as e:
+                                print(f"FBIN2 - Error while executing {command}: {e}")
+                                return e
+                        finally:
+                            os.chdir(original_cwd)
+                    else:
+                        print(f"FBIN3 - Model {command} not found.")
+                        os.chdir(original_cwd)
+                else:
+                    if DEBUG:
+                        print(f"DEBUG - Skipping command {command}...")
+        except Exception as e:
+            print(f"FER1 - Error while executing recipe: {e}")
+            traceback.print_exc()
+            return e
+        finally:
+            if DEBUG:
+                print("DEBUG - Exporting results...")
+            self.export_results(sequential_results)
 
     def _get_binary_path(self, command):
         """Find the correct binary path for the given command.
@@ -898,13 +1011,13 @@ class Factory:
         """
         """Find the correct binary path for the given command."""
         try:
-            if os.path.exists(MODELS_PATH_BUILD):
-                binary_path = os.path.join(os.path.abspath(MODELS_PATH_BUILD), command + ".exe")
+            if (MODELS_PATH_BUILD).exists():
+                binary_path = os.path.join(Path(MODELS_PATH_BUILD).resolve(), command + ".exe")
                 if DEBUG:
                     print(f"DEBUG - Changed directory to {MODELS_PATH_BUILD}")
                 return binary_path, MODELS_PATH_BUILD
-            elif os.path.exists(MODELS_PATH_DIST):
-                binary_path = os.path.join(os.path.abspath(MODELS_PATH_DIST), command + ".exe")
+            elif (MODELS_PATH_DIST).exists():
+                binary_path = os.path.join(Path(MODELS_PATH_DIST).resolve(), command + ".exe")
                 if DEBUG:
                     print(f"DEBUG - Changed directory to {MODELS_PATH_DIST}")
                 return binary_path, MODELS_PATH_DIST
@@ -997,9 +1110,8 @@ class Factory:
             image_paths = list(self.images.values())
             results = []
 
-            with self.change_directory(models_path):
+            with Utils().change_directory(models_path):
                 if config['FORCE_MAXPERFORMANCE']:
-                    # Process batches in parallel using ThreadPoolExecutor
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_to_batch = {executor.submit(self._run_subprocess, binary_path, image_paths[i:i + self.batch_size]): i for i in range(0, len(image_paths), self.batch_size)}
                         for future in concurrent.futures.as_completed(future_to_batch):
@@ -1025,7 +1137,6 @@ class Factory:
                                             )
                                         raise RuntimeError(f"FBIN2_P - Error while retrying smaller batch: {retry_e}")
                 else:
-                    # Process batches sequentially
                     for i in range(0, len(image_paths), self.batch_size):
                         batch = image_paths[i:i + self.batch_size]
                         if DEBUG:
@@ -1066,35 +1177,48 @@ class Factory:
         Raises:
             None
         """
-
+        self.true_commands = [command for command, value in self.commands.items() if value]
         expected_images = len(self.images)
         copied_images = set(os.listdir(self.upload_folder))
 
         try:
-            wait_time = 0
+            wait_time = 1
             while len(copied_images) < expected_images:
-                if DEBUG and wait_time % 2 == 0:
+                if DEBUG:
                     missing_images = expected_images - len(copied_images)
                     print(
                         f"DEBUG - Waiting for images to be copied... "
-                        f"{len(missing_images)} images remaining."  # type: ignore
+                        f"{missing_images} images remaining."
                     )
-                time.sleep(1)
-                wait_time += 1
+                time.sleep(wait_time)
+                wait_time = min(wait_time * 2, 16)
                 copied_images = set(os.listdir(self.upload_folder))
 
         except Exception as e:
             print(f"FPAR2 - Error while waiting for images to be copied: {e}")
+            traceback.print_exc()
             return e
 
         if DEBUG:
-            print("DEBUG - Executing recipes in parallel...")
+            print("DEBUG - All images copied, proceeding to parallel execution of recipes...")
 
-        with Pool() as pool:
-            if PERFORM_BENCHMARK:
-                with self.utils.benchmark_time("Executing commands in parallel"):
-                    results = pool.map(self._execute_command, self.loaded_recipes)
-            results = pool.map(self._execute_command, self.loaded_recipes)
+        num_processes = min(cpu_count(), len(self.true_commands))  # Optimize the number of processes
+
+        try:
+            with Pool(processes=num_processes) as pool:
+                if DEBUG:
+                    print(f"DEBUG - Starting parallel execution with {num_processes} processes.")
+
+                if PERFORM_BENCHMARK:
+                    print("Benchmarking parallel execution...")
+                    with self.utils.benchmark_time("Executing commands in parallel"):
+                        results = pool.map(self._execute_command, self.true_commands)
+                else:
+                    results = pool.map(self._execute_command, self.true_commands)
+        except Exception as e:
+            print(f"FPAR3 - Error while executing recipes in parallel: {e}")
+            traceback.print_exc()
+            return e
 
         # Flatten results and handle errors
         sequential_results = []
@@ -1103,10 +1227,14 @@ class Factory:
                 if isinstance(result, list):
                     sequential_results.extend(result)
                 else:
-                    print(f"FPAR1 - Error while executing recipe: {result}")
-                    raise ValueError(f"Invalid result type: {result}")
+                    print(f"FPAR1 - Warning: Expected a list result, got {type(result)} instead.")
             except Exception as e:
+                print(f"FPAR4 - Error while processing parallel execution results: {e}")
+                traceback.print_exc()
                 return e
+
+        if DEBUG:
+            print("DEBUG - Recipes executed in parallel successfully, proceeding to export.")
 
         self.export_results(sequential_results)
 
@@ -1132,8 +1260,13 @@ def handle_parallel_recipes_execution(__name__, Factory):
         try:
             factory.execute_recipes_parallel()
         except Exception as e:
-            print(f"FPAR_MASTER - Error while executing recipe using a paralellization, trying sequential: {e}")
-            factory.execute_recipe()
+            print(f"FPAR_MASTER - Error in parallel execution, switching to sequential execution: {e}")
+            traceback.print_exc()
+            try:
+                factory.execute_recipe()
+            except Exception as e_seq:
+                print(f"FPAR_MASTER - Error during sequential execution fallback: {e_seq}")
+                traceback.print_exc()
         except KeyboardInterrupt:
             print("FPAR_MASTER - Execution interrupted by user.")
 
