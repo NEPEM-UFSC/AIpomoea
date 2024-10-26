@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcRenderer } = require('electron')
 const path = require('path')
 const fs = require('fs');
+const { execFile } = require('child_process');
 const { ipcMain } = require('electron');
 const logger = require('./tools/logger');
 logger.level = 'info';
@@ -89,6 +90,7 @@ function CreateConfig() {
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
   logger.log({ level: 'info', message: 'Arquivo de configuracao criado com valores padrao.' });  
 }
+
 /**
  * Reads the configuration file and returns the parsed configuration object.
  * 
@@ -126,46 +128,77 @@ function readConfig(response=false) {
 }
 
 /**
- * Loads models from the specified directory and saves them in a JSON file.
+ * Loads models from the specified directory, gathers detailed info from each .exe,
+ * and saves all in a single JSON file.
  */
 function loadModels() {
-  const modelsPath = path.join(__dirname, 'models');
+  const MODELS_PATH = path.join(__dirname, 'models');
   const models = {
     root: [],
-    leaves: []
+    leaves: [],
+    details: {}
   };
-  
+
   try {
-    fs.readdir(modelsPath, (err, files) => {
+    fs.readdir(MODELS_PATH, (err, files) => {
       if (err) {
-        logger.log({ level: 'error', message: `Erro ao tentar ler o diretorio de modelos: ${err}` });
+        logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
         return;
       }
-  
-      files.forEach((file) => {
-        if (file.endsWith('.exe')) {
-          const modelName = file.replace('.exe', '');
-          if (modelName.startsWith('root_')) {
-            models.root.push(modelName);
-          } else if (modelName.startsWith('leaves_')) {
-            models.leaves.push(modelName);
-          }
+
+      // Processa arquivos .exe para classificação hierárquica e coleta de informações detalhadas
+      const exeFiles = files.filter(file => file.endsWith('.exe'));
+
+      exeFiles.forEach((file) => {
+        const modelName = file.replace('.exe', '');
+        if (modelName.startsWith('root_')) {
+          models.root.push(modelName);
+        } else if (modelName.startsWith('leaves_')) {
+          models.leaves.push(modelName);
         }
       });
 
-      try {
-        const modelsJsonPath = path.join(__dirname, 'models.json');
-        fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
-        logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
-        logger.log({ level: 'debug', message: `Modelos: ${JSON.stringify(models)}` });
-      } catch (writeErr) {
-        logger.log({ level: 'error', message: `Erro ao tentar salvar models.json: ${writeErr}` });
-      }
+      // Salva hierarquia básica de modelos e, em seguida, adiciona detalhes específicos
+      const modelsJsonPath = path.join(__dirname, 'models.json');
+      fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+      logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
+
+      // Itera sobre cada arquivo .exe para coletar informações detalhadas
+      exeFiles.forEach((file) => {
+        const filePath = path.join(MODELS_PATH, file);
+        const basename = path.basename(file, '.exe');
+
+        execFile(filePath, ['--info'], (error, stdout) => {
+          if (error) {
+            logger.log({ level: 'error', message: `Erro ao processar ${basename}: ${error.message}` });
+            return;
+          }
+
+          // Processa a saída e armazena as informações detalhadas
+          const [model_name, arc_name, arc_version, dataset, bin_eval_name] = stdout.trim().split(" *");
+          models.details[basename] = {
+            model_name,
+            arc_name,
+            arc_version,
+            dataset,
+            bin_eval_name
+          };
+
+          // Atualiza o arquivo JSON com os detalhes
+          try {
+            fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+            logger.log({ level: 'info', message: `Detalhes de ${basename} adicionados ao models.json` });
+          } catch (writeErr) {
+            logger.log({ level: 'error', message: `Erro ao tentar atualizar models.json: ${writeErr}` });
+          }
+        });
+      });
     });
   } catch (err) {
     logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
   }
 }
+
 /**
  * Creates a window and loads the appropriate HTML file based on the firstSession flag.
  * @function createWindow
@@ -519,3 +552,48 @@ ipcMain.on('receive-custom', (event, customData) => {
   });
 });
 
+ipcMain.handle("check-models-info", async () => {
+  const results = {}; // Objeto que conterá os dados a serem salvos no JSON
+
+  // Função para iterar sobre cada arquivo .exe e processar as informações
+  const processExecutables = async () => {
+    const files = fs.readdirSync(MODELS_PATH).filter(file => file.endsWith('.exe'));
+
+    for (const file of files) {
+      const filePath = path.join(MODELS_PATH, file);
+      const basename = path.basename(file, '.exe');
+
+      try {
+        // Executa o .exe com o argumento --info
+        const output = await new Promise((resolve, reject) => {
+          execFile(filePath, ['--info'], (error, stdout, stderr) => {
+            if (error) reject(stderr || error.message);
+            resolve(stdout.trim());
+          });
+        });
+
+        // Separa o resultado baseado em "*"
+        const [model_name, arc_name, arc_version, dataset, bin_eval_name] = output.split(" *");
+
+        // Armazena os dados em um objeto usando o basename como chave
+        results[basename] = {
+          model_name,
+          arc_name,
+          arc_version,
+          dataset,
+          bin_eval_name
+        };
+
+      } catch (err) {
+        console.error(`Erro ao processar ${basename}:`, err);
+      }
+    }
+
+    // Salva o objeto results no arquivo models.json
+    fs.writeFileSync(path.join(MODELS_PATH, 'models.json'), JSON.stringify(results, null, 2));
+  };
+
+  await processExecutables();
+
+  return results;
+});
