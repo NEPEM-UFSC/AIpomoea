@@ -94,17 +94,17 @@ body {
     padding: 20px;
 }
 
-.preloading, .preloading-genotype {
+.preloading, .preloading-genotype, .preloading-commands-specs {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
 }
 
-.preloading-genotype {
+.preloading-genotype, .preloading-commands-specs {
     margin-bottom: 10px;
 }
 
-.preloading-genotype label {
+.preloading-genotype label, .preloading-commands-specs label{
     display: inline-block;
     background-color: #e0e0e0;
     color: #333;
@@ -113,16 +113,16 @@ body {
     cursor: pointer;
 }
 
-.preloading-genotype input[type="checkbox"] {
+.preloading-genotype input[type="checkbox"], .preloading-commands-specs input[type="checkbox"] {
     display: none;
 }
 
-.preloading-genotype input[type="checkbox"]:checked + label {
+.preloading-genotype input[type="checkbox"]:checked + label, .preloading-commands-specs input[type="checkbox"]:checked + label {
     background-color: var(--green-leaves-color);
     color: white;
 }
 
-.preloading-genotype input[type="text"] {
+.preloading-genotype input[type="text"], .preloading-commands-specs input[type="text"] {
     padding: 10px 16px;
     font-size: 12px;
     width: auto;
