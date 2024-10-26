@@ -16,10 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ipcRenderer.send('request-genotype');
         ipcRenderer.on('genotype-response', (_event, enabledGenotype) => {
             if (enabledGenotype) {
-                console.log('Genótipo ativado.');
                 revealElements();
-            } else {
-                console.log('Genótipo desativado.');
             }
         });
         function revealElements() {
