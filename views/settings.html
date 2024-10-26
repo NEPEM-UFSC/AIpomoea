@@ -27,6 +27,25 @@
             text-decoration: none;
         }
 
+        .settings-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px; /* Espaçamento entre os botões */
+            margin-top: 20px; /* Ajuste conforme necessário */
+        }
+
+        .settings-buttons button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+        }
+
         .purple-button {
             text-decoration: none;
             color: white;
@@ -93,6 +112,14 @@
             </div>
         </div>
         <div class="section">
+            <h4>Configuração de Modelos</h4>
+            <span id="wip">⚠️Em desenvolvimento...</span>
+            <div class="settings-buttons">
+                <button class="purple-button" onclick="checkModels()">Verificar Modelos</button>
+                <button class="purple-button" onclick="checkModelsInfo()">Ver informações dos Modelos</button>
+            </div>
+        </div>
+        <div class="section">
             <h4>Configurações Experimentais</h4>
             <span id="wip">⚠️Configurações críticas, proceda com cuidado!</span>
             <div class="setting">
@@ -123,14 +150,46 @@
         </div>
     </div>
     <div class="popup-overlay" id="popup-overlay">
-        <div class="popup" id="sucess-popup">
+        <div class="popup" id="success-popup">
             <div class="popup-content">
                 <div class="popup-icon">
-                    <img src="../static/images/sucess.svg" alt="Sucesso">
+                    <img src="../static/images/success.svg" alt="Sucesso">
                 </div>
                 <h3>Configurações salvas</h3>
                 <p>Suas definições foram salvas com sucesso.</p>
                 <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+            </div>
+        </div>
+        <div class="popup" id="error-popup">
+            <div class="popup-content">
+                <div class="popup-icon">
+                    <img src="../static/images/error.svg" alt="Erro">
+                </div>
+                <h3>Erro ao salvar configurações</h3>
+                <p>Ocorreu um erro ao salvar suas configurações. Por favor, tente novamente.</p>
+                <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+            </div>
+        </div>
+        <div class="popup" id="models-info-popup">
+            <div class="popup-content">
+                <div class="popup-header">
+                    <h3>Informações dos Modelos</h3>
+                    <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+                </div>
+                <div class="popup-body">
+                    <p>Em desenvolvimento...</p>
+                </div>
+            </div>
+        </div>
+        <div class="popup" id="models-popup">
+            <div class="popup-content">
+                <div class="popup-header">
+                    <h3>Modelos disponíveis</h3>
+                    <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+                </div>
+                <div class="popup-body">
+                    <p>Em desenvolvimento...</p>
+                </div>
             </div>
         </div>
     </div>

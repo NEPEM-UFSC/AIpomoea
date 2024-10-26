@@ -19,6 +19,7 @@ function readConfig() {
         // Unused variable 'event'
         console.log('Recebendo configurações:', config);
         if (config) {
+            
             console.log('Configurações recebidas com sucesso.');
             Object.keys(config).forEach(key => {
                 const element = document.getElementsByName(key)[0];
@@ -54,33 +55,38 @@ function readConfig() {
  *   - Logs the configuration object before sending it via IPC.
  */
 function writeConfig() {
-    const config = {};
-    document.querySelectorAll('.setting input').forEach(element => {
-        if (element.type === 'checkbox') {
-            config[element.id] = element.checked;
-        } else {
-            config[element.id] = element.value;
+    try {
+        const config = {};
+        document.querySelectorAll('.setting input').forEach(element => {
+            if (element.type === 'checkbox') {
+                config[element.id] = element.checked;
+            } else {
+                config[element.id] = element.value;
+            }
+        });
+        // Adiciona o caminho do diretório do span output-folder
+        const outputFolderSpan = document.getElementById('output-folder');
+        if (outputFolderSpan) {
+            config['OUTPUT_DIR'] = outputFolderSpan.textContent;
         }
-    });
-    // Adiciona o caminho do diretório do span output-folder
-    const outputFolderSpan = document.getElementById('output-folder');
-    if (outputFolderSpan) {
-        config['OUTPUT_DIR'] = outputFolderSpan.textContent;
-    }
-    const databasePathSpan = document.getElementById('database-path');
-    if (databasePathSpan) {
-        config['DB_PATH'] = databasePathSpan.textContent;
-    }
+        const databasePathSpan = document.getElementById('database-path');
+        if (databasePathSpan) {
+            config['DB_PATH'] = databasePathSpan.textContent;
+        }
 
-    console.log("Configurações a serem salvas:", config);
-    ipcRenderer.send('write-config', config);
-    showPopup()
+        console.log("Configurações a serem salvas:", config);
+        ipcRenderer.send('write-config', config);
+        showPopup('sucess-popup');
+    } catch (error) {
+        console.error('Erro ao salvar configurações:', error);
+        showPopup('error-popup');
     }
+}
 
-function showPopup() {
-    document.getElementById('popup-overlay').style.display = 'flex';
+function showPopup(overlayId) {
+    document.getElementById(overlayId).style.display = 'flex';
     document.querySelector('.popup-overlay').classList.add('active');
-    document.getElementById('sucess-popup').style.display = 'flex';
+    document.getElementById(overlayId).style.display = 'flex';
 }
 
 function closePopup(overlayId) {
@@ -89,3 +95,11 @@ function closePopup(overlayId) {
         popup.style.display = 'none';
     });
     }
+
+function checkModels() {
+    
+}
+
+function checkModelsInfo() {
+    alert('Em desenvolvimento...');
+}
