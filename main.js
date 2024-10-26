@@ -194,7 +194,7 @@ function createWindow () {
     mainWindow.loadFile('views/index.html')
   }
   logger.log({ level: 'info', message: 'Janela principal criada com sucesso.' });
-  // mainWindow.setMenuBarVisibility(true)
+  mainWindow.setMenuBarVisibility(false)
   if (DEBUG){ mainWindow.webContents.openDevTools(); mainWindow.setMenuBarVisibility(true)}
 
   mainWindow.on('closed', () => {
