@@ -69,6 +69,21 @@
             display: inline-block;
             margin-right: 8px;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
     </style>
 </head>
 <body>
@@ -115,7 +130,7 @@
             <h4>Configuração de Modelos</h4>
             <span id="wip">⚠️Em desenvolvimento...</span>
             <div class="settings-buttons">
-                <button class="purple-button" onclick="checkModels()">Verificar Modelos</button>
+                <button class="purple-button" onclick="">Verificar Modelos</button>
                 <button class="purple-button" onclick="checkModelsInfo()">Ver informações dos Modelos</button>
             </div>
         </div>
@@ -150,10 +165,10 @@
         </div>
     </div>
     <div class="popup-overlay" id="popup-overlay">
-        <div class="popup" id="success-popup">
+        <div class="popup" id="sucess-popup">
             <div class="popup-content">
                 <div class="popup-icon">
-                    <img src="../static/images/success.svg" alt="Sucesso">
+                    <img src="../static/images/sucess.svg" alt="Sucesso">
                 </div>
                 <h3>Configurações salvas</h3>
                 <p>Suas definições foram salvas com sucesso.</p>
@@ -170,7 +185,7 @@
                 <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
             </div>
         </div>
-        <div class="popup" id="models-info-popup">
+        <div class="popup" id="models-popup">
             <div class="popup-content">
                 <div class="popup-header">
                     <h3>Informações dos Modelos</h3>
@@ -181,19 +196,36 @@
                 </div>
             </div>
         </div>
-        <div class="popup" id="models-popup">
-            <div class="popup-content">
-                <div class="popup-header">
-                    <h3>Modelos disponíveis</h3>
-                    <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+        <div class="popup" id="models-info-popup">
+            <div class="popup-content" style="width: auto;max-width: max-content;">
+                <div class="popup-icon">
+                    <img src="../static/images/models.svg" alt="Modelos">
                 </div>
-                <div class="popup-body">
-                    <p>Em desenvolvimento...</p>
-                </div>
+                <h3>Informações dos Modelos</h3>
+                
+                <!-- Tabela para exibir os dados do JSON -->
+                <table id="models-table">
+                    <thead>
+                        <tr>
+                            <th>Comando</th>
+                            <th>Nome do Modelo</th>
+                            <th>Nome Arquitetura</th>
+                            <th>Versão Arquitetura</th>
+                            <th>Dataset</th>
+                            <th>Nome da Estrutura do Executável</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dados da tabela serão inseridos aqui -->
+                    </tbody>
+                </table>
+                
+                <button class="close-button" onclick="closePopup('models-info-popup')">Fechar</button>
             </div>
-        </div>
+        </div>        
     </div>
-    <script src="../static/js/config-handler.js"></script> 
+    <script src="../static/js/config-handler.js"></script>
+    <script src="../static/js/check-models.js"></script>  
     <footer class="app-version" id="app-version">
         Versão:
     </footer>
