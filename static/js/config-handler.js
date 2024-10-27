@@ -83,23 +83,26 @@ function writeConfig() {
     }
 }
 
-function showPopup(overlayId) {
-    document.getElementById(overlayId).style.display = 'flex';
-    document.querySelector('.popup-overlay').classList.add('active');
-    document.getElementById(overlayId).style.display = 'flex';
+function showPopup(popupId) {
+    // Mostra o fundo de overlay
+    const overlay = document.getElementById("popup-overlay");
+    overlay.classList.add("active");
+
+    // Exibe o popup específico
+    const popup = document.getElementById(popupId);
+    popup.style.display = "flex";
 }
 
-function closePopup(overlayId) {
-    document.getElementById(overlayId).style.display = 'none';
-    document.querySelectorAll('.popup').forEach(popup => {
-        popup.style.display = 'none';
-    });
+function closePopup(popupId) {
+    // Oculta o popup específico
+    const popup = document.getElementById(popupId);
+    popup.style.display = "none";
+
+    // Verifica se há outros popups abertos. Se nenhum estiver aberto, oculta o overlay
+    const anyPopupOpen = Array.from(document.querySelectorAll(".popup"))
+        .some(popup => popup.style.display === "flex");
+
+    if (!anyPopupOpen) {
+        document.getElementById("popup-overlay").classList.remove("active");
     }
-
-function checkModels() {
-    
-}
-
-function checkModelsInfo() {
-    alert('Em desenvolvimento...');
 }
