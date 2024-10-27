@@ -175,7 +175,10 @@ function loadModels() {
           }
 
           // Processa a saída e armazena as informações detalhadas
-          const [model_name, arc_name, arc_version, dataset, bin_eval_name] = stdout.trim().split(" *");
+          const [model_name, arc_name, arc_version, dataset, bin_eval_name] = stdout
+            .trim()
+            .split(" *")
+            .map(info => info.replace('*', ''));
           models.details[basename] = {
             model_name,
             arc_name,
@@ -552,48 +555,22 @@ ipcMain.on('receive-custom', (event, customData) => {
   });
 });
 
-ipcMain.handle("check-models-info", async () => {
-  const results = {}; // Objeto que conterá os dados a serem salvos no JSON
+ipcMain.on('check-models-info', (event) => {
+  const modelsJsonPath = path.join(__dirname, 'models.json');
 
-  // Função para iterar sobre cada arquivo .exe e processar as informações
-  const processExecutables = async () => {
-    const files = fs.readdirSync(MODELS_PATH).filter(file => file.endsWith('.exe'));
-
-    for (const file of files) {
-      const filePath = path.join(MODELS_PATH, file);
-      const basename = path.basename(file, '.exe');
+  fs.readFile(modelsJsonPath, 'utf8', (err, data) => {
+      if (err) {
+          console.error(`Erro ao ler models.json: ${err}`);
+          event.sender.send('models-info-response', { error: 'Erro ao ler models.json' });
+          return;
+      }
 
       try {
-        // Executa o .exe com o argumento --info
-        const output = await new Promise((resolve, reject) => {
-          execFile(filePath, ['--info'], (error, stdout, stderr) => {
-            if (error) reject(stderr || error.message);
-            resolve(stdout.trim());
-          });
-        });
-
-        // Separa o resultado baseado em "*"
-        const [model_name, arc_name, arc_version, dataset, bin_eval_name] = output.split(" *");
-
-        // Armazena os dados em um objeto usando o basename como chave
-        results[basename] = {
-          model_name,
-          arc_name,
-          arc_version,
-          dataset,
-          bin_eval_name
-        };
-
-      } catch (err) {
-        console.error(`Erro ao processar ${basename}:`, err);
+          const models = JSON.parse(data);
+          event.sender.send('models-info-response', models);
+      } catch (parseErr) {
+          console.error(`Erro ao parsear JSON: ${parseErr}`);
+          event.sender.send('models-info-response', { error: 'Erro ao parsear models.json' });
       }
-    }
-
-    // Salva o objeto results no arquivo models.json
-    fs.writeFileSync(path.join(MODELS_PATH, 'models.json'), JSON.stringify(results, null, 2));
-  };
-
-  await processExecutables();
-
-  return results;
+  });
 });
