@@ -2,6 +2,11 @@ function checkModelsInfo() {
     ipcRenderer.send('check-models-info');
 }
 
+function checkModels() {
+    console.log('Checking models...');
+    ipcRenderer.send('check-models');
+}
+
 // Recebe a resposta com os dados de models.json
 ipcRenderer.on('models-info-response', (event, models) => {
     if (models.error) {
@@ -43,5 +48,25 @@ ipcRenderer.on('models-info-response', (event, models) => {
 
         // Exibe o popup com as informações dos modelos
         showPopup('models-info-popup');
+    }
+});
+
+ipcRenderer.on('models-check-response', (event, response) => {
+    if (response.status === 'good') {
+        console.log('All models are valid');
+        showPopup('sucess-model-popup');
+    } else if (response.status === 'error') {
+        console.error('Error checking models:', response.error);
+        const errorList = document.querySelector('#model-error-list');
+        errorList.innerHTML = ''; // Clear previous content
+
+        // Display each invalid model in the error popup
+        response.invalidExecutables.forEach((model) => {
+            const listItem = document.createElement('li');
+            listItem.textContent = model;
+            errorList.appendChild(listItem);
+        });
+
+        showPopup('model-error-popup');
     }
 });
