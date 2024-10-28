@@ -130,7 +130,7 @@
             <h4>Configuração de Modelos</h4>
             <span id="wip">⚠️Em desenvolvimento...</span>
             <div class="settings-buttons">
-                <button class="purple-button" onclick="">Verificar Modelos</button>
+                <button class="purple-button" onclick="checkModels()">Verificar Modelos</button>
                 <button class="purple-button" onclick="checkModelsInfo()">Ver informações dos Modelos</button>
             </div>
         </div>
@@ -172,7 +172,17 @@
                 </div>
                 <h3>Configurações salvas</h3>
                 <p>Suas definições foram salvas com sucesso.</p>
-                <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+                <button class="close-button" onclick="closePopup('sucess-popup')">Fechar</button>
+            </div>
+        </div>
+        <div class="popup" id="sucess-model-popup">
+            <div class="popup-content">
+                <div class="popup-icon">
+                    <img src="../static/images/sucess.svg" alt="Sucesso">
+                </div>
+                <h3>Sucesso</h3>
+                <p>Os modelos foram verificados e nenhum erro encontrado.</p>
+                <button class="close-button" onclick="closePopup('sucess-model-popup')">Fechar</button>
             </div>
         </div>
         <div class="popup" id="error-popup">
@@ -182,18 +192,19 @@
                 </div>
                 <h3>Erro ao salvar configurações</h3>
                 <p>Ocorreu um erro ao salvar suas configurações. Por favor, tente novamente.</p>
-                <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+                <button class="close-button" onclick="closePopup('error-popup')">Fechar</button>
             </div>
         </div>
-        <div class="popup" id="models-popup">
+        <div class="popup" id="model-error-popup">
             <div class="popup-content">
-                <div class="popup-header">
-                    <h3>Informações dos Modelos</h3>
-                    <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+                <div class="popup-icon">
+                    <img src="../static/images/error.svg" alt="Erro">
                 </div>
-                <div class="popup-body">
-                    <p>Em desenvolvimento...</p>
-                </div>
+                <p>Os seguintes modelos falharam na verificação:</p>
+                <ul id="model-error-list">
+                    <!-- Lista de modelos inválidos -->
+                </ul>
+                <button class="close-button" onclick="closePopup('model-error-popup')">Fechar</button>
             </div>
         </div>
         <div class="popup" id="models-info-popup">
@@ -216,7 +227,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Dados da tabela serão inseridos aqui -->
+                        <!-- Dados da tabela -->
                     </tbody>
                 </table>
                 
