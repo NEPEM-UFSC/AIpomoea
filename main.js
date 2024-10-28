@@ -131,7 +131,10 @@ function readConfig(response=false) {
  * Loads models from the specified directory, gathers detailed info from each .exe,
  * and saves all in a single JSON file.
  */
+
+
 function loadModels() {
+  logger.log({ level: 'info', message: 'realizando models_check "MODELSINFO" ' });
   const MODELS_PATH = path.join(__dirname, 'models');
   const models = {
     root: [],
@@ -572,5 +575,39 @@ ipcMain.on('check-models-info', (event) => {
           console.error(`Erro ao parsear JSON: ${parseErr}`);
           event.sender.send('models-info-response', { error: 'Erro ao parsear models.json' });
       }
+  });
+});
+
+ipcMain.on('check-models', (event) => {
+  const MODELS_PATH = path.join(__dirname, 'models');
+  fs.readdir(MODELS_PATH, (err, files) => {
+    if (err) {
+      logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
+      event.sender.send('models-check-response', { error: 'Erro ao tentar ler o diretório de modelos' });
+      return;
+    }
+
+    const exeFiles = files.filter(file => file.endsWith('.exe'));
+    const invalidExecutables = [];
+
+    exeFiles.forEach((file, index) => {
+      const filePath = path.join(MODELS_PATH, file);
+
+      execFile(filePath, ['--info'], (error, stdout) => {
+        if (error || !stdout.includes('*')) {
+          invalidExecutables.push(file);
+        }
+
+        if (index === exeFiles.length - 1) {
+          if (invalidExecutables.length > 0) {
+            logger.log({ level: 'error', message: `Executaveis invalidos: ${invalidExecutables.join(', ')}` });
+            event.sender.send('models-check-response', { status: 'error', invalidExecutables });
+          } else {
+            logger.log({ level: 'info', message: 'Todos os executáveis sao validos.' });
+            event.sender.send('models-check-response', { status: 'good', message: 'Todos os executaveis sao validos.' });
+        }
+        }
+      });
+    });
   });
 });
