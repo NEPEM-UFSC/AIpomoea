@@ -82,11 +82,19 @@ function writeConfig() {
         showPopup('error-popup');
     }
 }
-
 function showPopup(popupId) {
     // Mostra o fundo de overlay
     const overlay = document.getElementById("popup-overlay");
     overlay.classList.add("active");
+    overlay.style.display = "flex";
+
+    // Oculta todos os popups antes de exibir o específico
+    const allPopups = document.querySelectorAll(".popup");
+    allPopups.forEach(popup => {
+        if (popup.id !== popupId) {
+            popup.style.display = "none";
+        }
+    });
 
     // Exibe o popup específico
     const popup = document.getElementById(popupId);
@@ -101,8 +109,9 @@ function closePopup(popupId) {
     // Verifica se há outros popups abertos. Se nenhum estiver aberto, oculta o overlay
     const anyPopupOpen = Array.from(document.querySelectorAll(".popup"))
         .some(popup => popup.style.display === "flex");
-
     if (!anyPopupOpen) {
-        document.getElementById("popup-overlay").classList.remove("active");
+        const overlay = document.getElementById("popup-overlay");
+        overlay.classList.remove("active");
+        overlay.style.display = "none";
     }
 }
