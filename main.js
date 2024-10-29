@@ -137,71 +137,84 @@ function loadModels() {
   logger.log({ level: 'info', message: 'realizando models_check "MODELSINFO" ' });
   const MODELS_PATH = path.join(__dirname, 'models');
   const models = {
-    root: [],
-    leaves: [],
-    details: {}
+      root: [],
+      leaves: [],
+      details: {}
   };
 
   try {
-    fs.readdir(MODELS_PATH, (err, files) => {
-      if (err) {
-        logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
-        return;
-      }
-
-      // Processa arquivos .exe para classificação hierárquica e coleta de informações detalhadas
-      const exeFiles = files.filter(file => file.endsWith('.exe'));
-
-      exeFiles.forEach((file) => {
-        const modelName = file.replace('.exe', '');
-        if (modelName.startsWith('root_')) {
-          models.root.push(modelName);
-        } else if (modelName.startsWith('leaves_')) {
-          models.leaves.push(modelName);
-        }
-      });
-
-      // Salva hierarquia básica de modelos e, em seguida, adiciona detalhes específicos
-      const modelsJsonPath = path.join(__dirname, 'models.json');
-      fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
-      logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
-
-      // Itera sobre cada arquivo .exe para coletar informações detalhadas
-      exeFiles.forEach((file) => {
-        const filePath = path.join(MODELS_PATH, file);
-        const basename = path.basename(file, '.exe');
-
-        execFile(filePath, ['--info'], (error, stdout) => {
-          if (error) {
-            logger.log({ level: 'error', message: `Erro ao processar ${basename}: ${error.message}` });
-            return;
+      fs.readdir(MODELS_PATH, (err, files) => {
+          if (err) {
+              logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
+              return;
           }
 
-          // Processa a saída e armazena as informações detalhadas
-          const [model_name, arc_name, arc_version, dataset, bin_eval_name] = stdout
-            .trim()
-            .split(" *")
-            .map(info => info.replace('*', ''));
-          models.details[basename] = {
-            model_name,
-            arc_name,
-            arc_version,
-            dataset,
-            bin_eval_name
-          };
+          // Processa arquivos .exe para classificação hierárquica e coleta de informações detalhadas
+          const exeFiles = files.filter(file => file.endsWith('.exe'));
 
-          // Atualiza o arquivo JSON com os detalhes
-          try {
-            fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
-            logger.log({ level: 'info', message: `Detalhes de ${basename} adicionados ao models.json` });
-          } catch (writeErr) {
-            logger.log({ level: 'error', message: `Erro ao tentar atualizar models.json: ${writeErr}` });
-          }
-        });
+          exeFiles.forEach((file) => {
+              const modelName = file.replace('.exe', '');
+              if (modelName.startsWith('root_')) {
+                  models.root.push(modelName);
+              } else if (modelName.startsWith('leaves_')) {
+                  models.leaves.push(modelName);
+              }
+          });
+
+          // Salva hierarquia básica de modelos e, em seguida, adiciona detalhes específicos
+          const modelsJsonPath = path.join(__dirname, 'models.json');
+          fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+          logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
+
+          // Itera sobre cada arquivo .exe para coletar informações detalhadas
+          exeFiles.forEach((file) => {
+              const filePath = path.join(MODELS_PATH, file);
+              const basename = path.basename(file, '.exe');
+
+              execFile(filePath, ['--info'], (error, stdout) => {
+                  if (error) {
+                      logger.log({ level: 'error', message: `Erro ao processar ${basename}: ${error.message}` });
+                      return;
+                  }
+
+              // Sanitização aprimorada do stdout
+              const sanitizedOutput = stdout
+                .split('*')                              // Divide pelo delimitador '*'
+                .map(info => info.replace(/\*/g, '').trim()) // Remove todos os '*' e espaços
+                .filter(info => info);  
+
+              if (sanitizedOutput[0] === '') {
+                    sanitizedOutput.shift();  // Remove o primeiro elemento
+              }
+                
+              // Definimos variáveis apenas se houver um número esperado de campos
+              if (sanitizedOutput.length >= 5) {
+                  const [model_name, arc_name, arc_version, dataset, bin_eval_name] = sanitizedOutput;
+
+                  models.details[basename] = {
+                      model_name: model_name || "Desconhecido",
+                      arc_name: arc_name || "N/D",
+                      arc_version: arc_version || "N/D",
+                      dataset: dataset || "N/D",
+                      bin_eval_name: bin_eval_name || "N/D"
+                  };
+
+
+                  // Atualiza o arquivo JSON com os detalhes
+                  try {
+                      fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+                      logger.log({ level: 'info', message: `Detalhes de ${basename} adicionados ao models.json` });
+                  } catch (writeErr) {
+                      logger.log({ level: 'error', message: `Erro ao tentar atualizar models.json: ${writeErr}` });
+                  }
+              } else {
+                  logger.log({ level: 'warn', message: `Formato de saída inesperado para ${basename}, dados ignorados.` });
+              }
+              });
+          });
       });
-    });
   } catch (err) {
-    logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
+      logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
   }
 }
 
