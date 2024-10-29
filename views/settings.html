@@ -27,6 +27,25 @@
             text-decoration: none;
         }
 
+        .settings-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px; /* Espaçamento entre os botões */
+            margin-top: 20px; /* Ajuste conforme necessário */
+        }
+
+        .settings-buttons button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+        }
+
         .purple-button {
             text-decoration: none;
             color: white;
@@ -49,6 +68,21 @@
             color: #000;
             display: inline-block;
             margin-right: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f4f4f4;
         }
     </style>
 </head>
@@ -93,6 +127,14 @@
             </div>
         </div>
         <div class="section">
+            <h4>Configuração de Modelos</h4>
+            <span id="wip">⚠️Em desenvolvimento...</span>
+            <div class="settings-buttons">
+                <button class="purple-button" onclick="checkModels()">Verificar Modelos</button>
+                <button class="purple-button" onclick="checkModelsInfo()">Ver informações dos Modelos</button>
+            </div>
+        </div>
+        <div class="section">
             <h4>Configurações Experimentais</h4>
             <span id="wip">⚠️Configurações críticas, proceda com cuidado!</span>
             <div class="setting">
@@ -112,7 +154,7 @@
                 <label for="database-path">Caminho da Database:</label>
                 <span id="database-path" class="span-box"></span>
                 <input type="file" id="DB_PATH" style="display: none;" accept=".db">
-                <button class="customDirSelect" id="select-database-button">Selecionar banco de dados</button>
+                <button class="customDirSelect" id="select-database-button" onclick=openDBFileDialog()>Selecionar banco de dados</button>
             </div>
             <div class="setting" id="db-name-settings">
                 <label for="database-name">Nome da tabela no DB:</label>
@@ -130,11 +172,71 @@
                 </div>
                 <h3>Configurações salvas</h3>
                 <p>Suas definições foram salvas com sucesso.</p>
-                <button class="close-button" onclick="closePopup('popup-overlay')">Fechar</button>
+                <button class="close-button" onclick="closePopup('sucess-popup')">Fechar</button>
             </div>
         </div>
+        <div class="popup" id="sucess-model-popup">
+            <div class="popup-content">
+                <div class="popup-icon">
+                    <img src="../static/images/sucess.svg" alt="Sucesso">
+                </div>
+                <h3>Sucesso</h3>
+                <p>Os modelos foram verificados e nenhum erro encontrado.</p>
+                <button class="close-button" onclick="closePopup('sucess-model-popup')">Fechar</button>
+            </div>
+        </div>
+        <div class="popup" id="error-popup">
+            <div class="popup-content">
+                <div class="popup-icon">
+                    <img src="../static/images/error.svg" alt="Erro">
+                </div>
+                <h3>Erro ao salvar configurações</h3>
+                <p>Ocorreu um erro ao salvar suas configurações. Por favor, tente novamente.</p>
+                <button class="close-button" onclick="closePopup('error-popup')">Fechar</button>
+            </div>
+        </div>
+        <div class="popup" id="model-error-popup">
+            <div class="popup-content">
+                <div class="popup-icon">
+                    <img src="../static/images/error.svg" alt="Erro">
+                </div>
+                <p>Os seguintes modelos falharam na verificação:</p>
+                <ul id="model-error-list">
+                    <!-- Lista de modelos inválidos -->
+                </ul>
+                <button class="close-button" onclick="closePopup('model-error-popup')">Fechar</button>
+            </div>
+        </div>
+        <div class="popup" id="models-info-popup">
+            <div class="popup-content" style="width: auto;max-width: max-content;">
+                <div class="popup-icon">
+                    <img src="../static/images/models.svg" alt="Modelos">
+                </div>
+                <h3>Informações dos Modelos</h3>
+                
+                <!-- Tabela para exibir os dados do JSON -->
+                <table id="models-table">
+                    <thead>
+                        <tr>
+                            <th>Comando</th>
+                            <th>Nome do Modelo</th>
+                            <th>Nome Arquitetura</th>
+                            <th>Versão Arquitetura</th>
+                            <th>Dataset</th>
+                            <th>Nome da Estrutura do Executável</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dados da tabela -->
+                    </tbody>
+                </table>
+                
+                <button class="close-button" onclick="closePopup('models-info-popup')">Fechar</button>
+            </div>
+        </div>        
     </div>
-    <script src="../static/js/config-handler.js"></script> 
+    <script src="../static/js/config-handler.js"></script>
+    <script src="../static/js/check-models.js"></script>  
     <footer class="app-version" id="app-version">
         Versão:
     </footer>
@@ -171,28 +273,6 @@
             const outputFolderSpan = document.getElementById('output-folder');
             const databasePathSpan = document.getElementById('database-path');
             const databasePathInput = document.getElementById('DB_PATH');
-            const databaseSelectButton = document.getElementById('select-database-button');
-
-            databaseSelectButton.addEventListener('click', function() {
-                databasePathInput.click();
-            });
-
-            databasePathInput.addEventListener('change', function(event) {
-                const files = event.target.files;
-                if (files.length > 0) {
-                    const selectedFile = files[0];
-                    const fileExtension = selectedFile.name.split('.').pop();
-                    if (fileExtension === 'db') {
-                        const directoryPath = selectedFile.path;
-                        databasePathSpan.textContent = directoryPath;
-                    } else {
-                        databasePathSpan.textContent = 'Invalid file format. Please select a .db file.';
-                        databasePathInput.value = '';
-                    }
-                } else {
-                    databasePathSpan.textContent = 'Nenhum arquivo selecionado⚠️';
-                }
-            });
 
             selectButton.addEventListener('click', function() {
                 outputDirInput.click();

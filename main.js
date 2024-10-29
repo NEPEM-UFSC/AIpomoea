@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcRenderer } = require('electron')
+const { app, BrowserWindow, ipcRenderer, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs');
+const { execFile } = require('child_process');
 const { ipcMain } = require('electron');
 const logger = require('./tools/logger');
 logger.level = 'info';
@@ -89,6 +90,7 @@ function CreateConfig() {
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
   logger.log({ level: 'info', message: 'Arquivo de configuracao criado com valores padrao.' });  
 }
+
 /**
  * Reads the configuration file and returns the parsed configuration object.
  * 
@@ -126,46 +128,96 @@ function readConfig(response=false) {
 }
 
 /**
- * Loads models from the specified directory and saves them in a JSON file.
+ * Loads models from the specified directory, gathers detailed info from each .exe,
+ * and saves all in a single JSON file.
  */
-function loadModels() {
-  const modelsPath = path.join(__dirname, 'models');
-  const models = {
-    root: [],
-    leaves: []
-  };
-  
-  try {
-    fs.readdir(modelsPath, (err, files) => {
-      if (err) {
-        logger.log({ level: 'error', message: `Erro ao tentar ler o diretorio de modelos: ${err}` });
-        return;
-      }
-  
-      files.forEach((file) => {
-        if (file.endsWith('.exe')) {
-          const modelName = file.replace('.exe', '');
-          if (modelName.startsWith('root_')) {
-            models.root.push(modelName);
-          } else if (modelName.startsWith('leaves_')) {
-            models.leaves.push(modelName);
-          }
-        }
-      });
 
-      try {
-        const modelsJsonPath = path.join(__dirname, 'models.json');
-        fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
-        logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
-        logger.log({ level: 'debug', message: `Modelos: ${JSON.stringify(models)}` });
-      } catch (writeErr) {
-        logger.log({ level: 'error', message: `Erro ao tentar salvar models.json: ${writeErr}` });
-      }
-    });
+
+function loadModels() {
+  logger.log({ level: 'info', message: 'realizando models_check "MODELSINFO" ' });
+  const MODELS_PATH = path.join(__dirname, 'models');
+  const models = {
+      root: [],
+      leaves: [],
+      details: {}
+  };
+
+  try {
+      fs.readdir(MODELS_PATH, (err, files) => {
+          if (err) {
+              logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
+              return;
+          }
+
+          // Processa arquivos .exe para classificação hierárquica e coleta de informações detalhadas
+          const exeFiles = files.filter(file => file.endsWith('.exe'));
+
+          exeFiles.forEach((file) => {
+              const modelName = file.replace('.exe', '');
+              if (modelName.startsWith('root_')) {
+                  models.root.push(modelName);
+              } else if (modelName.startsWith('leaves_')) {
+                  models.leaves.push(modelName);
+              }
+          });
+
+          // Salva hierarquia básica de modelos e, em seguida, adiciona detalhes específicos
+          const modelsJsonPath = path.join(__dirname, 'models.json');
+          fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+          logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
+
+          // Itera sobre cada arquivo .exe para coletar informações detalhadas
+          exeFiles.forEach((file) => {
+              const filePath = path.join(MODELS_PATH, file);
+              const basename = path.basename(file, '.exe');
+
+              execFile(filePath, ['--info'], (error, stdout) => {
+                  if (error) {
+                      logger.log({ level: 'error', message: `Erro ao processar ${basename}: ${error.message}` });
+                      return;
+                  }
+
+              // Sanitização aprimorada do stdout
+              const sanitizedOutput = stdout
+                .split('*')                              // Divide pelo delimitador '*'
+                .map(info => info.replace(/\*/g, '').trim()) // Remove todos os '*' e espaços
+                .filter(info => info);  
+
+              if (sanitizedOutput[0] === '') {
+                    sanitizedOutput.shift();  // Remove o primeiro elemento
+              }
+                
+              // Definimos variáveis apenas se houver um número esperado de campos
+              if (sanitizedOutput.length >= 5) {
+                  const [model_name, arc_name, arc_version, dataset, bin_eval_name] = sanitizedOutput;
+
+                  models.details[basename] = {
+                      model_name: model_name || "Desconhecido",
+                      arc_name: arc_name || "N/D",
+                      arc_version: arc_version || "N/D",
+                      dataset: dataset || "N/D",
+                      bin_eval_name: bin_eval_name || "N/D"
+                  };
+
+
+                  // Atualiza o arquivo JSON com os detalhes
+                  try {
+                      fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+                      logger.log({ level: 'info', message: `Detalhes de ${basename} adicionados ao models.json` });
+                  } catch (writeErr) {
+                      logger.log({ level: 'error', message: `Erro ao tentar atualizar models.json: ${writeErr}` });
+                  }
+              } else {
+                  logger.log({ level: 'warn', message: `Formato de saída inesperado para ${basename}, dados ignorados.` });
+              }
+              });
+          });
+      });
   } catch (err) {
-    logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
+      logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
   }
 }
+
 /**
  * Creates a window and loads the appropriate HTML file based on the firstSession flag.
  * @function createWindow
@@ -519,3 +571,76 @@ ipcMain.on('receive-custom', (event, customData) => {
   });
 });
 
+ipcMain.on('check-models-info', (event) => {
+  const modelsJsonPath = path.join(__dirname, 'models.json');
+
+  fs.readFile(modelsJsonPath, 'utf8', (err, data) => {
+      if (err) {
+          console.error(`Erro ao ler models.json: ${err}`);
+          event.sender.send('models-info-response', { error: 'Erro ao ler models.json' });
+          return;
+      }
+
+      try {
+          const models = JSON.parse(data);
+          event.sender.send('models-info-response', models);
+      } catch (parseErr) {
+          console.error(`Erro ao parsear JSON: ${parseErr}`);
+          event.sender.send('models-info-response', { error: 'Erro ao parsear models.json' });
+      }
+  });
+});
+
+ipcMain.on('check-models', (event) => {
+  const MODELS_PATH = path.join(__dirname, 'models');
+  fs.readdir(MODELS_PATH, (err, files) => {
+    if (err) {
+      logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
+      event.sender.send('models-check-response', { error: 'Erro ao tentar ler o diretório de modelos' });
+      return;
+    }
+
+    const exeFiles = files.filter(file => file.endsWith('.exe'));
+    const invalidExecutables = [];
+
+    exeFiles.forEach((file, index) => {
+      const filePath = path.join(MODELS_PATH, file);
+
+      execFile(filePath, ['--info'], (error, stdout) => {
+        if (error || !stdout.includes('*')) {
+          invalidExecutables.push(file);
+        }
+
+        if (index === exeFiles.length - 1) {
+          if (invalidExecutables.length > 0) {
+            logger.log({ level: 'error', message: `Executaveis invalidos: ${invalidExecutables.join(', ')}` });
+            event.sender.send('models-check-response', { status: 'error', invalidExecutables });
+          } else {
+            logger.log({ level: 'info', message: 'Todos os executáveis sao validos.' });
+            event.sender.send('models-check-response', { status: 'good', message: 'Todos os executaveis sao validos.' });
+        }
+        }
+      });
+    });
+  });
+});
+
+ipcMain.on('open-db-file-dialog', (event) => {
+  logger.log({ level: 'debug', message: 'open-db-file-dialog event received' });
+
+  dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [
+          { name: 'Databases', extensions: ['db'] }
+      ]
+  }).then(result => {
+      if (!result.canceled) {
+          logger.log({ level: 'debug', message: `File selected: ${result.filePaths[0]}` });
+          event.sender.send('selected-db-file', result.filePaths[0]);
+      } else {
+          logger.log({ level: 'debug', message: 'File selection canceled' });
+      }
+  }).catch(err => {
+      logger.log({ level: 'debug', message: `Error during file selection: ${err}` });
+  });
+});
