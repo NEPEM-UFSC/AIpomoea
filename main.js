@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcRenderer } = require('electron')
+const { app, BrowserWindow, ipcRenderer, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs');
 const { execFile } = require('child_process');
@@ -609,5 +609,25 @@ ipcMain.on('check-models', (event) => {
         }
       });
     });
+  });
+});
+
+ipcMain.on('open-db-file-dialog', (event) => {
+  logger.log({ level: 'debug', message: 'open-db-file-dialog event received' });
+
+  dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [
+          { name: 'Databases', extensions: ['db'] }
+      ]
+  }).then(result => {
+      if (!result.canceled) {
+          logger.log({ level: 'debug', message: `File selected: ${result.filePaths[0]}` });
+          event.sender.send('selected-db-file', result.filePaths[0]);
+      } else {
+          logger.log({ level: 'debug', message: 'File selection canceled' });
+      }
+  }).catch(err => {
+      logger.log({ level: 'debug', message: `Error during file selection: ${err}` });
   });
 });
