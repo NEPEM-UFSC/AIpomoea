@@ -154,7 +154,7 @@
                 <label for="database-path">Caminho da Database:</label>
                 <span id="database-path" class="span-box"></span>
                 <input type="file" id="DB_PATH" style="display: none;" accept=".db">
-                <button class="customDirSelect" id="select-database-button">Selecionar banco de dados</button>
+                <button class="customDirSelect" id="select-database-button" onclick=openDBFileDialog()>Selecionar banco de dados</button>
             </div>
             <div class="setting" id="db-name-settings">
                 <label for="database-name">Nome da tabela no DB:</label>
@@ -273,28 +273,6 @@
             const outputFolderSpan = document.getElementById('output-folder');
             const databasePathSpan = document.getElementById('database-path');
             const databasePathInput = document.getElementById('DB_PATH');
-            const databaseSelectButton = document.getElementById('select-database-button');
-
-            databaseSelectButton.addEventListener('click', function() {
-                databasePathInput.click();
-            });
-
-            databasePathInput.addEventListener('change', function(event) {
-                const files = event.target.files;
-                if (files.length > 0) {
-                    const selectedFile = files[0];
-                    const fileExtension = selectedFile.name.split('.').pop();
-                    if (fileExtension === 'db') {
-                        const directoryPath = selectedFile.path;
-                        databasePathSpan.textContent = directoryPath;
-                    } else {
-                        databasePathSpan.textContent = 'Invalid file format. Please select a .db file.';
-                        databasePathInput.value = '';
-                    }
-                } else {
-                    databasePathSpan.textContent = 'Nenhum arquivo selecionado⚠️';
-                }
-            });
 
             selectButton.addEventListener('click', function() {
                 outputDirInput.click();
