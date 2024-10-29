@@ -845,47 +845,117 @@ class Factory:
             print("FLIBE - Error while loading images.")
             raise e
 
-    # TODO - Implementar um override, para que se uma imagem ja foi adcionada na tabela antes, novos dados sejam enviados para o mesmo segundo image_name.
     def export_connecteddb(self, results):
         """
-        Exports results to a connected database by adding any missing columns and inserting data.
-        Parameters:
-            - self (object): The class instance containing the database connection and cursor.
-            - results (pandas.DataFrame): DataFrame containing the data to be exported with column names as database table columns.
-        Returns:
-            - None: The function performs database operations and does not return any value.
-        Example:
-            - Assuming `self` has `db_conn` and `db_cursor` attributes:
-              `export_connecteddb(self, results)`
-        """
-        # Verificar se a conexão e o cursor do banco de dados estão definidos
-        if not hasattr(self, 'db_cursor') or not hasattr(self, 'db_conn'):
-            raise AttributeError("A conexão com o banco de dados não está definida.")
+    Exports data from a DataFrame to a connected SQLite database, updating existing entries and
+    adding new columns if necessary.
 
-        if self.db_cursor is None or self.db_conn is None:
-            raise AttributeError("A conexão com o banco de dados não está definida.")
+    Parameters:
+        - self (object): An instance of the class that holds the database connection (`db_conn`) and cursor (`db_cursor`).
+        - results (pandas.DataFrame): A DataFrame containing data to be exported to the SQLite database.
+          The DataFrame must include at least an 'image' column to uniquely identify each row in the table.
 
-        # Obter o nome da tabela a partir da configuração
-        config = self.load_config()
-        table_name = config['DB_NAME']
+    Returns:
+        - None: The function performs database operations and does not return any value.
 
-        self.db_cursor.execute(f"PRAGMA table_info({table_name});")
-        existing_columns = [info[1] for info in self.db_cursor.fetchall()]
+    Raises:
+        - AttributeError: If the database connection (`db_conn`) or cursor (`db_cursor`) are not defined or are set to `None`.
+        - KeyError: If the 'image' column is not present in the DataFrame, as it is required to identify existing records.
 
-        # Adicionar colunas que não existem
-        for col in results.columns:
-            if col not in existing_columns:
-                self.db_cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {col} TEXT;")
+    Database Requirements:
+        - The function assumes an SQLite database with a specific table configuration, as follows:
+            - Table name: The table name is obtained from the configuration file loaded by `load_config()`,
+              accessible via `config['DB_NAME']`.
+            - Columns: The primary column used for identifying records is `image` (TEXT), which should contain
+              unique values (e.g., file names, URLs) for each row. Additional columns in the DataFrame will be
+              matched to columns in the table; if a column is missing in the database, it will be added automatically.
+            - Primary key: Although the function does not enforce a primary key constraint, the `image` column
+              serves as a unique identifier for each row.
 
-        # Inserir dados do DataFrame na tabela
-        for index, row in results.iterrows():
-            columns = ', '.join(row.index)
-            placeholders = ', '.join(['?'] * len(row))
-            sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-            self.db_cursor.execute(sql, tuple(row))
+    Example Usage:
+        Assuming the database and cursor are set up and the `load_config` function provides the necessary table
+        name, the following code would allow exporting a DataFrame to the SQLite database:
 
-        # Confirmar alterações no banco de dados
-        self.db_conn.commit()
+        ```
+        db_handler = DatabaseHandler()  # Example class containing db_conn and db_cursor attributes
+        results = pd.DataFrame({
+            'image': ['image1.png', 'image2.png'],
+            'description': ['Description 1', 'Description 2'],
+            'date_added': ['2024-10-28', '2024-10-29']
+        })
+        db_handler.export_connecteddb(results)
+        ```
+
+    Details:
+        - Database connection and cursor validation:
+          Checks if `db_conn` and `db_cursor` are defined to prevent database operation errors.
+        - Table structure and column verification:
+          Uses the `PRAGMA table_info` command to fetch existing columns. New columns are added if they exist in
+          the DataFrame but not in the database table.
+        - Data insertion and update:
+          For each row in the DataFrame, the function checks for an existing entry with the same `image` value:
+            - If an entry exists, the function updates columns other than `image`.
+            - If no entry is found, it inserts the entire row as a new record.
+
+    Note:
+        The 'image' column is essential for identifying and updating records. Ensure the DataFrame includes this
+        column with unique values to avoid conflicts. The function assumes that the `image` column is formatted
+        consistently between the DataFrame and the database.
+    """
+        try:
+            if not hasattr(self, 'db_cursor') or not hasattr(self, 'db_conn'):
+                raise AttributeError("FBSQL1- A conexão com o banco de dados não está definida.")
+
+            if self.db_cursor is None or self.db_conn is None:
+                raise AttributeError("FBSQL2 - A conexão com o banco de dados não está definida.")
+
+            # Obter o nome da tabela a partir da configuração
+            config = self.load_config()
+            table_name = config['DB_NAME']
+
+            # Verificar as colunas existentes na tabela do banco de dados
+            self.db_cursor.execute(f"PRAGMA table_info({table_name});")
+            existing_columns = [info[1] for info in self.db_cursor.fetchall()]
+
+            try:
+                for col in results.columns:
+                    if col not in existing_columns:
+                        self.db_cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {col} TEXT;")
+            except Exception as e:
+                print(f"FBSQL3 - Erro ao adicionar colunas: {e}")
+                raise
+
+            for index, row in results.iterrows():
+                image_name = row['image']
+
+                self.db_cursor.execute(f"SELECT 1 FROM {table_name} WHERE image = ?", (image_name,))
+                exists = self.db_cursor.fetchone()
+                try:
+                    if exists:
+                        update_placeholders = ', '.join([f"{col} = ?" for col in row.index if col != 'image'])
+                        update_sql = f"UPDATE {table_name} SET {update_placeholders} WHERE image = ?"
+                        self.db_cursor.execute(update_sql, tuple(row[col] for col in row.index if col != 'image') + (image_name,))
+                    else:
+                        columns = ', '.join(row.index)
+                        placeholders = ', '.join(['?'] * len(row))
+                        insert_sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+                        self.db_cursor.execute(insert_sql, tuple(row))
+                except Exception as e:
+                    print(f"FBSQL4 - Erro ao inserir/atualizar dados: {e}")
+                    raise
+
+            self.db_conn.commit()
+            self.db_conn.close()
+
+        except AttributeError as e:
+            print("FBSQL-ATTR: ", e)
+            raise
+        except sqlite3.DatabaseError as e:
+            print("FBSQL-DBERR: ", e)
+            raise
+        except Exception as e:
+            print("FBSQL-EXC: ", e)
+            raise
 
     def export_results(self, results):
         """
