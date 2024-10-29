@@ -452,6 +452,7 @@ class ResultsExporter:
             return separated_results
         except Exception as e:
             print(f"GRBB1 - Error while grouping results by base: {e}")
+            traceback.print_exc()
             raise e
 
     def _export_to_formats(self, base_name, results_data):
@@ -646,6 +647,7 @@ class Factory:
                 return content
         except Exception as e:
             print(f"FLCO1 - Error while loading config: {e}")
+            traceback.print_exc()
             raise e
 
     def load_database(self):
@@ -682,6 +684,7 @@ class Factory:
                     raise ValueError("FDB2 - Table not found.")
             except Exception as e:
                 print(f"FDB1 - Error while loading database: {e}")
+                traceback.print_exc()
                 raise e
 
     def load_custom_preloading(self):
@@ -700,6 +703,7 @@ class Factory:
                 return content
         except Exception as e:
             print(f"LCP1 - Error while loading custom preloading: {e}")
+            traceback.print_exc()
             raise e
 
     def get_output_folder(self):
@@ -717,6 +721,7 @@ class Factory:
             return config['OUTPUT_DIR']
         except Exception as e:
             print("GOF1 - Error while getting output folder.")
+            traceback.print_exc()
             raise e
 
     def preloading(self):
@@ -826,10 +831,12 @@ class Factory:
         try:
             if self.upload_folder is None:
                 print("FLI1 - Upload folder not found.")
+                traceback.print_exc()
                 raise FileNotFoundError("FLI1 - Images folder not found.")
 
             if not isinstance(self.images, dict):
                 print("FLI4 - Invalid images dictionary.")
+                traceback.print_exc()
                 raise ValueError("FLI2 - Invalid images dictionary.")
 
             for filename in os.listdir(self.upload_folder):
@@ -838,11 +845,13 @@ class Factory:
 
             if not self.images:
                 print("FLI5 - No images found.")
+                traceback.print_exc()
                 raise FileNotFoundError("FLI3 - No images found.")
 
             return self.images
         except Exception as e:
             print("FLIBE - Error while loading images.")
+            traceback.print_exc()
             raise e
 
     def export_connecteddb(self, results):
@@ -904,9 +913,11 @@ class Factory:
     """
         try:
             if not hasattr(self, 'db_cursor') or not hasattr(self, 'db_conn'):
+                traceback.print_exc()
                 raise AttributeError("FBSQL1- A conexão com o banco de dados não está definida.")
 
             if self.db_cursor is None or self.db_conn is None:
+                traceback.print_exc()
                 raise AttributeError("FBSQL2 - A conexão com o banco de dados não está definida.")
 
             # Obter o nome da tabela a partir da configuração
@@ -923,7 +934,8 @@ class Factory:
                         self.db_cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {col} TEXT;")
             except Exception as e:
                 print(f"FBSQL3 - Erro ao adicionar colunas: {e}")
-                raise
+                traceback.print_exc()
+                raise e
 
             for index, row in results.iterrows():
                 image_name = row['image']
@@ -942,20 +954,24 @@ class Factory:
                         self.db_cursor.execute(insert_sql, tuple(row))
                 except Exception as e:
                     print(f"FBSQL4 - Erro ao inserir/atualizar dados: {e}")
-                    raise
+                    traceback.print_exc()
+                    raise e
 
             self.db_conn.commit()
             self.db_conn.close()
 
         except AttributeError as e:
             print("FBSQL-ATTR: ", e)
-            raise
+            traceback.print_exc()
+            raise e
         except sqlite3.DatabaseError as e:
             print("FBSQL-DBERR: ", e)
-            raise
+            traceback.print_exc()
+            raise e
         except Exception as e:
             print("FBSQL-EXC: ", e)
-            raise
+            traceback.print_exc()
+            raise e
 
     def export_results(self, results):
         """
@@ -967,38 +983,43 @@ class Factory:
         Example:
             - export_results([('image1', 'modelA', 0.95), ('image2', 'modelB', 0.88)])
         """
-        output_folder = self.get_output_folder()
-        if DEBUG:
-            print(f"DEBUG - Output_folder: {output_folder}")
+        try:
+            output_folder = self.get_output_folder()
+            if DEBUG:
+                print(f"DEBUG - Output_folder: {output_folder}")
 
-        separate_exports = self.commands_spec.get('export_separation', False)
+            separate_exports = self.commands_spec.get('export_separation', False)
 
-        results_dict = {}
-        for image, model, result in results:
-            if image not in results_dict:
-                results_dict[image] = {}
-            results_dict[image][model] = result
+            results_dict = {}
+            for image, model, result in results:
+                if image not in results_dict:
+                    results_dict[image] = {}
+                results_dict[image][model] = result
 
-        results_pd = pd.DataFrame.from_dict(results_dict, orient='index').reset_index()
-        results_pd.rename(columns={'index': 'image'}, inplace=True)
+            results_pd = pd.DataFrame.from_dict(results_dict, orient='index').reset_index()
+            results_pd.rename(columns={'index': 'image'}, inplace=True)
 
-        if self.exportation_formats.get('connected_database', False):
-            self.load_database()
-            self.export_connecteddb(results_pd)
+            if self.exportation_formats.get('connected_database', False):
+                self.load_database()
+                self.export_connecteddb(results_pd)
 
-        if DEBUG:
-            print(f"DEBUG - Exporting results: {results_dict}")
-            print("DEBUG - Calling ResultsExporter with those parameters:")
-            print(f"DEBUG - Exportation formats: {self.exportation_formats}")
-            print(f"DEBUG - Output folder: {output_folder}")
-            print(f"DEBUG - Separate exports: {separate_exports}")
+            if DEBUG:
+                print(f"DEBUG - Exporting results: {results_dict}")
+                print("DEBUG - Calling ResultsExporter with those parameters:")
+                print(f"DEBUG - Exportation formats: {self.exportation_formats}")
+                print(f"DEBUG - Output folder: {output_folder}")
+                print(f"DEBUG - Separate exports: {separate_exports}")
 
-        exporter = ResultsExporter(
-            exportation_formats=self.exportation_formats,
-            output_folder=output_folder,
-            separate_exports=separate_exports
-        )
-        exporter.export_results(results_dict)
+            exporter = ResultsExporter(
+                exportation_formats=self.exportation_formats,
+                output_folder=output_folder,
+                separate_exports=separate_exports
+            )
+            exporter.export_results(results_dict)
+        except Exception as e:
+            print(f"FPEXR - Error during export_results: {e}")
+            traceback.print_exc()
+            raise e
 
     def execute_recipe(self):
         """
@@ -1094,8 +1115,7 @@ class Factory:
             else:
                 return None, None
         except Exception as e:
-            if DEBUG:
-                print(f"DEBUG - Error while getting binary path: {e}")
+            traceback.print_exc()
             raise RuntimeError(f"FBIN1_P - Error while loading binary: {e}")
 
     def _run_subprocess(self, binary_path, batch):
@@ -1118,6 +1138,7 @@ class Factory:
             return result.decode('utf-8').strip().split('\n')
         except subprocess.CalledProcessError as e:
             print(f"FRSB1 - Subprocess error: {e}")
+            traceback.print_exc()
             raise e
 
     def _process_results(self, result_lines, command):
@@ -1201,10 +1222,7 @@ class Factory:
                                         result_lines = self._run_subprocess(binary_path, retry_batch)
                                         results.extend(self._process_results(result_lines, command))
                                     except Exception as retry_e:
-                                        if DEBUG:
-                                            print(
-                                                f"DEBUG - Error during retry: {retry_e}"
-                                            )
+                                        traceback.print_exc()
                                         raise RuntimeError(f"FBIN2_P - Error while retrying smaller batch: {retry_e}")
                 else:
                     for i in range(0, len(image_paths), self.batch_size):
@@ -1215,6 +1233,7 @@ class Factory:
                             result_lines = self._run_subprocess(binary_path, batch)
                             results.extend(self._process_results(result_lines, command))
                         except Exception as e:
+
                             if DEBUG:
                                 print(f"DEBUG - Error while executing {command} on batch, retrying with smaller batch: {e}")
                             # Retry logic for smaller batch
