@@ -505,6 +505,7 @@ class ResultsExporter:
             else:
                 print(f"REXFOR4 - No valid data to export for base name {base_name}")
                 raise ValueError(f"No valid data to export for base name {base_name}")
+            print("done")
 
         except Exception as e:
             print(f"REXFOR1 - Error while exporting results: {e}")
