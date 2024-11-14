@@ -66,8 +66,8 @@
                     </div>
                 </div>
                 <div class="preloading-naming" style="display: none;">
-                    <input type="checkbox" id="export-separation">
-                    <label for="export-separation">Separar resultados por fator.</label>
+                    <label for="exportSeparationDropdown">Separar resultados por: </label>
+                    <select id="exportSeparationDropdown"></select>
                 </div>
                 <div class="preloading-commands-specs">
                     <input type="checkbox" id="white-background">
@@ -151,7 +151,6 @@
 <script src="../static/js/send-commands.js"></script> 
 <script src="../static/js/receive-response.js"></script>
 <script src="../static/js/custom-loading.js"></script>
-</body>
 <script>
     var prevButton = document.getElementById('prevImageButton');
     var nextButton = document.getElementById('nextImageButton');
