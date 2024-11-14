@@ -19,16 +19,12 @@ function readConfig() {
                 if (element) {
                     if (element.type && (element.type === 'checkbox')) {
                         element.checked = config[key];
-                    }
-                    else {
+                    } else {
                         element.value = config[key];
                     }
+                }
                 document.getElementById('output-folder').textContent = config.OUTPUT_DIR;
                 document.getElementById('database-path').textContent = config.DB_PATH;
-
-                } else {
-                    console.error(`Elemento ${key} não encontrado no DOM.`);
-                }
             });
         }
     });
@@ -50,11 +46,11 @@ function readConfig() {
 function writeConfig() {
     try {
         const config = {};
-        document.querySelectorAll('.setting input').forEach(element => {
+        document.querySelectorAll('.setting input, .setting select').forEach(element => {
             if (element.type === 'checkbox') {
-                config[element.id] = element.checked;
+                config[element.name] = element.checked;
             } else {
-                config[element.id] = element.value;
+                config[element.name] = element.value;
             }
         });
         // Adiciona o caminho do diretório do span output-folder
