@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (enableNamingSeparation) {
                 console.log('Naming separation enabled, revealing elements.'); // Adicionar log para depuração
                 revealElements();
+                populateDropdown(namingConvention); // Populate dropdown with naming convention options
             } else {
                 console.log('Naming separation not enabled.'); // Adicionar log para depuração
             }
@@ -31,6 +32,24 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.forEach(element => {
             element.style.display = 'block';
             console.log('Element revealed:', element); // Adicionar log para depuração
+        });
+    }
+
+    function populateDropdown(namingConvention) {
+        const dropdown = document.querySelector('#exportSeparationDropdown');
+        dropdown.innerHTML = '';
+
+        const naOption = document.createElement('option');
+        naOption.value = 'Selecione';
+        naOption.textContent = 'Selecione';
+        dropdown.appendChild(naOption);
+
+        const options = namingConvention.split('-');
+        options.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option;
+            opt.textContent = option;
+            dropdown.appendChild(opt);
         });
     }
 
@@ -53,11 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function executeCustomLoading() {
     const selectedOption = document.querySelector('#textOption').value;
     const customEntry = document.querySelector('#textInput').value;
+    const exportSeparation = document.querySelector('#exportSeparationDropdown').value; // Get selected dropdown value
 
     // Armazenar os valores conforme necessário
     const storedValues = {
         selectedOption,
-        customEntry
+        customEntry,
+        exportSeparation // Add exportSeparation to stored values
     };
 
     try {
