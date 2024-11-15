@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
         dropdown.innerHTML = '';
 
         const naOption = document.createElement('option');
-        naOption.value = 'Selecione';
-        naOption.textContent = 'Selecione';
+        naOption.value = 'Nenhum';
+        naOption.textContent = 'Nenhum';
         dropdown.appendChild(naOption);
 
         const options = namingConvention.split('-');
