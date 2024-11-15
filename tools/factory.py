@@ -10,7 +10,7 @@ import os
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Union
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -52,7 +52,7 @@ Key responsibilities include:
 
 License: refer to the LICENSE file provided with the code for information on usage and redistribution rights.
 
-version: 0.5.2 - 14/10/2024
+version: 0.6.1 - 14/11/2024
 """
 
 """
@@ -106,9 +106,6 @@ CONFIG_PATH_DIST = Path('./resources/app/config.json').resolve()
 CUSTOM_PRELOADING_PATH_BUILD = Path('./custom_preloading.json').resolve()
 CUSTOM_PRELOADING_PATH_DIST = Path('./resources/app/custom_preloading.json').resolve()
 
-
-# TODO - Criar método de receber whitebg, para que não seja interpretado como comando, mas nem como formato de exportação, vamos corrigir essa budega.
-# TODO - Depois que recebido, ao fazer ops, verificar se ela for do tipo cor e então executar com "--whitebg" no subprocesso.
 
 class Model:
     """
@@ -167,21 +164,23 @@ class Model:
 
 class Utils:
     """
-    A class for utility functions.
-    NOTE: This class is intended for benchmarking purposes and may be expanded in future versions, as it is not used for production operations.
-    IMPORTANT: Set the PERFORM_BENCHMARK flag to True to enable benchmarking.
-
-    Attributes:
-        start_time (float): The start time of the benchmark.
-
+    Utils class provides utility methods for benchmarking code execution time and safely changing directories.
     Methods:
-        benchmark(): Starts the benchmark timer.
-        end_benchmark(): Ends the benchmark and prints the elapsed time.
-        benchmark_time(description="Operation"): Context manager for benchmarking the execution time of an operation.
-
+        __init__():
+        benchmark():
+        end_benchmark():
+        benchmark_time(description="Operation"):
+        change_directory(new_path):
     """
 
     def __init__(self):
+        """
+        Initializes the factory object with default settings.
+
+        Attributes:
+            start_time (None): Placeholder for the start time of the factory process.
+            write_logs (bool): Flag to determine if logs should be written. Default is True.
+        """
         self.start_time = None
         self.write_logs = True
 
@@ -264,17 +263,30 @@ class Utils:
                 # Code to be executed in the new directory.
 
         """
-        original_cwd = os.getcwd()
+        self.ocwd = os.getcwd()
         os.chdir(new_path)
         try:
             yield
         finally:
-            os.chdir(original_cwd)
+            os.chdir(self.ocwd)
 
 
 class Recipe:
     """
-    A class to manage the loading and processing of a recipe file.
+    The Recipe class is responsible for loading and processing user-defined recipes for the execution of AI models.
+
+    Attributes:
+    EXPORT_FORMATS (set): A set of supported export formats (e.g., {'csv', 'json', 'pdf', 'connected_database'}).
+    COMMANDS_SPEC (set): A set of supported special commands (e.g., {'white_background', 'export_separation'}).
+    recipe_path (Path): The path to the recipe file.
+
+    Methods:
+    init(): Initializes the Recipe class instance, determining the recipe path.
+    _determine_recipe_path() -> Path: Determines the path to the recipe file.
+    load_recipe() -> Dict[str, Any]: Loads the recipe from a JSON file and separates it into commands, command specifications, and export formats.
+    _process_recipe(checkbox_states: Dict[str, bool]) -> Dict[str, Dict[str, bool]]: Processes the states of the recipe's checkboxes, categorizing them into commands, command specifications, and export formats.
+    _decompose_commands(commands: Dict[str, bool]) -> Tuple[Dict[str, bool], Dict[str, bool], Dict[str, bool]]: Decomposes the commands into three categories: general commands, command specifications, and export formats.
+
     """
     def __init__(self):
         """
@@ -390,7 +402,7 @@ class Recipe:
 
 
 class ResultsExporter:
-    def __init__(self, exportation_formats, output_folder, separate_exports=False):
+    def __init__(self, exportation_formats, output_folder, separate_exports):
         """
         Initializes the ResultsExporter with export formats and output folder.
         Parameters:
@@ -404,112 +416,155 @@ class ResultsExporter:
 
     def export_results(self, results_dict):
         """
-        Main method to export results in specified formats.
+        Exports results in specified formats, optionally separating them by a configured position.
+
         Parameters:
-            - results_dict (dict): Results to export, keyed by image names with associated data.
+            results_dict (dict): Dictionary of results to export, keyed by image names with associated data.
+
+        Returns:
+            None
         """
         try:
             if DEBUG:
                 print("DEBUG - Starting export_results method.")
                 print(f"DEBUG - Results to export: {results_dict}")
 
-            # Group results by base name if separate_exports is enabled
-            if self.separate_exports:
+            position = self.separate_exports - 1 if self.separate_exports else None
+
+            if position is not None:
                 if DEBUG:
-                    print("DEBUG - separate_exports is enabled. Grouping results by base name.")
-                separated_results = self._group_results_by_base(results_dict)
+                    print(f"DEBUG - Exporting results with separation at position {position}.")
+
+                try:
+                    separated_results = self._group_results_by_position(results_dict, position)
+                except Exception as group_error:
+                    print(f"REXEXR2 - Error while grouping results by position: {group_error}")
+                    raise group_error
+
                 if DEBUG:
                     print(f"DEBUG - Grouped results: {separated_results}")
+
                 if separated_results:
                     for base_name, grouped_results in separated_results.items():
                         if DEBUG:
                             print(f"DEBUG - Exporting results for base name: {base_name}")
-                        self._export_to_formats(base_name, grouped_results)
+                        try:
+                            self._export_to_formats(base_name, grouped_results)
+                        except Exception as export_error:
+                            print(f"REXEXR3 - Error while exporting grouped results for base name '{base_name}': {export_error}")
+                            raise export_error
             else:
-                # Non-separated export
                 if DEBUG:
-                    print("DEBUG - separate_exports is not enabled. Exporting all results together.")
-                self._export_to_formats("results", results_dict)
-        except Exception as e:
-            print(f"REXEXR1 - Error while exporting results: {e}")
-            return e
+                    print("DEBUG - No separation position provided. Exporting all results together.")
+                try:
+                    self._export_to_formats("results", results_dict)
+                except Exception as export_error:
+                    print(f"REXEXR4 - Error while exporting non-separated results: {export_error}")
+                    raise export_error
 
-    def _group_results_by_base(self, results_dict):
+        except Exception as e:
+            print(f"REXEXR1 - Error in export_results method: {e}")
+            raise e
+
+    def _group_results_by_position(self, results_dict, position):
         """
-        Groups results by the base name of each image.
+        Groups results by the specified position in the image name.
+
         Parameters:
-            - results_dict (dict): Original results dictionary keyed by image names.
+            results_dict (dict): Original results dictionary keyed by image names.
+            position (int): Position to use for grouping the results (0-based index).
+
         Returns:
-            - dict: Dictionary where each key is a base name, and each value is a dictionary of results.
+            dict: Dictionary where each key is a base name, and each value is a dictionary of results.
         """
         try:
+            if DEBUG:
+                print("DEBUG - Starting _group_results_by_position method.")
+                print(f"DEBUG - Position for grouping: {position}")
+                print(f"DEBUG - Results to group: {results_dict}")
+
             separated_results = {}
+
             for image, data in results_dict.items():
-                base_name = image.split('_')[0].split('-')[0]
-                if base_name not in separated_results:
-                    separated_results[base_name] = {}
-                separated_results[base_name][image] = data
+                try:
+                    parts = re.split(r'[_-]', image)
+                    if len(parts) > position:
+                        base_name = parts[position]
+                        if base_name not in separated_results:
+                            separated_results[base_name] = {}
+                        separated_results[base_name][image] = data
+                    else:
+                        print(f"GRBB2 - Invalid position {position} for image '{image}'. Skipping this image.")
+                except Exception as grouping_error:
+                    print(f"GRBB3 - Error processing image '{image}': {grouping_error}")
+                    raise grouping_error
+
+            if DEBUG:
+                print(f"DEBUG - Grouped results: {separated_results}")
+
             return separated_results
+
         except Exception as e:
-            print(f"GRBB1 - Error while grouping results by base: {e}")
-            traceback.print_exc()
+            print(f"GRBB1 - Error in _group_results_by_position method: {e}")
             raise e
 
     def _export_to_formats(self, base_name, results_data):
         """
         Exports data in all specified formats (CSV, JSON).
+
         Parameters:
-            - base_name (str): Name to use as the base of the output filename.
-            - results_data (dict): Dictionary of results keyed by image with associated data.
+            base_name (str): Name to use as the base of the output filename.
+            results_data (dict): Dictionary of results keyed by image with associated data.
+
+        Returns:
+            None
         """
         try:
             if DEBUG:
-                print(f"DEBUG - Exporting results for base name: {base_name}")
-                print(f"DEBUG - Results data structure: {results_data}")
+                print(f"DEBUG - Starting export for base name: {base_name}")
+                print(f"DEBUG - Results data: {results_data}")
 
-            # Adjust the list comprehension to handle possible format inconsistencies
             rows = []
             for image, data in results_data.items():
-                if isinstance(data, dict):  # Ensure data is a dictionary to avoid unpack errors
-                    for model, result in data.items():
-                        rows.append((image, model, result))
+                if isinstance(data, dict):
+                    rows.extend((image, model, result) for model, result in data.items())
                 else:
-                    print(f"REXFOR3 - Unexpected data format for image {image}: {data}")
+                    print(f"REXFOR3 - Unexpected data format for image '{image}': {data}")
 
-            # Convert rows to DataFrame if not empty
-            if rows:
-                results_df = pd.DataFrame(rows, columns=['image', 'model', 'result']).pivot(
-                    index='image', columns='model', values='result'
-                ).reset_index()
+            if not rows:
+                print(f"REXFOR4 - No valid data to export for base name '{base_name}'")
+                raise ValueError(f"No valid data to export for base name '{base_name}'")
 
-                if DEBUG:
-                    print("DEBUG - DataFrame created for export:")
-                    print(results_df.head())
+            results_df = pd.DataFrame(rows, columns=['image', 'model', 'result']).pivot(
+                index='image', columns='model', values='result'
+            ).reset_index()
 
-                try:
-                    # Export results to all enabled formats
-                    for format_name, enabled in self.exportation_formats.items():
-                        if enabled:
-                            export_method = getattr(self, f"_export_to_{format_name}", None)
-                            if export_method:
-                                try:
-                                    export_method(base_name, results_df)
-                                except Exception as e:
-                                    print(f"REXFOR2 - Error while exporting {base_name} to {format_name.upper()}: {e}")
-                                    traceback.print_exc()
-                                    raise e
-                except Exception as e:
-                    print(f"REXFOR5 - Error while exporting results: {e}")
-                    traceback.print_exc()
-                    raise e
-            else:
-                print(f"REXFOR4 - No valid data to export for base name {base_name}")
-                raise ValueError(f"No valid data to export for base name {base_name}")
+            if DEBUG:
+                print("DEBUG - DataFrame created for export:")
+                print(results_df.head())
+
+            for format_name, enabled in self.exportation_formats.items():
+                if enabled:
+                    export_method = getattr(self, f"_export_to_{format_name}", None)
+                    if callable(export_method):
+                        try:
+                            export_method(base_name, results_df)
+                        except Exception as e:
+                            print(f"REXFOR2 - Error while exporting '{base_name}' to {format_name.upper()}: {e}")
+                            raise e
+                    else:
+                        print(f"REXFOR6 - No valid export method found for format: {format_name}")
+
             print("done")
 
+        except ValueError as ve:
+            print(f"REXFOR4 - Value error encountered: {ve}")
+            raise ve
+        except KeyError as ke:
+            print(f"REXFOR5 - Missing configuration key: {ke}")
+            raise ke
         except Exception as e:
-            print(f"REXFOR1 - Error while exporting results: {e}")
-            traceback.print_exc()
+            print(f"REXFOR1 - Unexpected error during export: {e}")
             raise e
 
     def _export_to_csv(self, base_name, results_df):
@@ -520,6 +575,7 @@ class ResultsExporter:
             - results_df (pd.DataFrame): DataFrame containing the results.
         """
         try:
+
             results_df.to_csv(f"{self.output_folder}/{base_name.lower()}.csv", index=False)
         except Exception as e:
             print(f"CSVEX - Error while exporting {base_name} to CSV: {e}")
@@ -550,37 +606,41 @@ class Factory:
 
     Attributes:
         upload_folder (str): The path to the upload folder.
-        config_path (str): The path to the config file.
+        commands (dict): The commands loaded from the recipe.
+        commands_spec (dict): The specifications of the commands loaded from the recipe.
+        exportation_formats (dict): The export formats loaded from the recipe.
+        ocwd (str): The current working directory.
+        models_path (str): The path to the models folder.
+        config_path (str): The path to the configuration file.
         custom_preloading_path (str): The path to the custom preloading file.
-        SPECIAL_COMMANDS (list): A list of special commands.
-        images (dict): A dictionary to store images.
-        results (pandas.DataFrame): A DataFrame to store results.
-        loaded_recipes (list): A list of loaded recipes.
-        exportation_formats (list): A list of exportation formats.
+        images (dict): A dictionary for storing images.
+        results (pandas.DataFrame): A DataFrame for storing results.
         models (Model): An instance of the Model class.
         db_conn (sqlite3.Connection): A connection to the SQLite database.
         db_cursor (sqlite3.Cursor): A cursor for the SQLite database.
         batch_size (int): The batch size for parallel execution.
-        PERFORM_BENCHMARK (bool): A flag to enable benchmarking.
-
+        utils (Utils):
 
     Methods:
         load_config()
+        load_database()
         load_custom_preloading()
+        get_output_folder()
         preloading()
         select_only(values)
         exclude_only(values)
         load_export_separation()
-        load_exportation_formats()
+        verify_preprocessed_images()
         load_images()
-        export_results()
-        export_grouped_results()
+        export_connecteddb(results)
+        export_results(results)
         execute_recipe()
-        _get_binary_path()
-        _run_subprocess()
-        _process_results()
-        _execute_command()
+        _get_binary_path(command)
+        _run_subprocess(binary_path,batch)
+        _process_results(result_lines, command)
+        _execute_command(command)
         execute_recipes_parallel()
+
     """
 
     def __init__(self):
@@ -605,20 +665,28 @@ class Factory:
         self.commands = recipe_content['commands']
         self.commands_spec = recipe_content['commands_spec']
         self.exportation_formats = recipe_content['exportation_format']
+        self.ocwd = os.getcwd()
+
+        if (MODELS_PATH_BUILD).exists():
+            self.models_path = MODELS_PATH_BUILD
+        elif (MODELS_PATH_DIST).exists():
+            self.models_path = MODELS_PATH_DIST
+        else:
+            raise FileNotFoundError("FINIT3 - Models folder not found.")
 
         if (CONFIG_PATH_BUILD).exists():
             self.config_path = CONFIG_PATH_BUILD
         elif (CONFIG_PATH_DIST).exists():
             self.config_path = CONFIG_PATH_DIST
         else:
-            raise FileNotFoundError("FINIT3 - Config file not found.")
+            raise FileNotFoundError("FINIT4 - Config file not found.")
 
         if (CUSTOM_PRELOADING_PATH_BUILD).exists():
             self.custom_preloading_path = CUSTOM_PRELOADING_PATH_BUILD
         elif (CUSTOM_PRELOADING_PATH_DIST).exists():
             self.custom_preloading_path = CUSTOM_PRELOADING_PATH_DIST
         else:
-            raise FileNotFoundError("FINIT4 - Custom preloading file not found.")
+            raise FileNotFoundError("FINIT5 - Custom preloading file not found.")
 
         self.images = {}
         self.preloading()
@@ -719,6 +787,8 @@ class Factory:
         """
         try:
             config = self.load_config()
+            if not config.get('OUTPUT_DIR'):
+                return os.path.abspath(os.path.join(self.ocwd, "results"))
             return config['OUTPUT_DIR']
         except Exception as e:
             print("GOF1 - Error while getting output folder.")
@@ -735,25 +805,26 @@ class Factory:
         Returns:
             bool: True if preloading is performed successfully, False otherwise.
         """
-        config = self.load_config()
-        if config['ENABLE_GENOTYPE']:
-            preloading_config = self.load_custom_preloading()
-            if 'customEntry' in preloading_config:
-                custom_entry = preloading_config['customEntry']
-                if custom_entry:
-                    try:
-                        custom_entry = custom_entry.split(',')
-                        selected_option = preloading_config.get('selectedOption')
-                        if selected_option == 'selectOnly':
-                            self.select_only(custom_entry)
-                        elif selected_option == 'excludeOnly':
-                            self.exclude_only(custom_entry)
-                    except Exception as e:
-                        print(f"FPL1 - Error while performing preloading: {e}")
-                        return False
-                else:
-                    pass
+        preloading_config = self.load_custom_preloading()
+        if 'customEntry' in preloading_config:
+            custom_entry = preloading_config['customEntry']
+            if custom_entry:
+                try:
+                    custom_entry = custom_entry.split(',')
+                    selected_option = preloading_config.get('selectedOption')
+                    export_separation = preloading_config.get('exportSeparation')
+                    if selected_option == 'selectOnly':
+                        self.select_only(custom_entry)
+                    elif selected_option == 'excludeOnly':
+                        self.exclude_only(custom_entry)
+                    if export_separation:
+                        print(f"Export separation option selected: {export_separation}")
+                except Exception as e:
+                    print(f"FPL1 - Error while performing preloading: {e}")
+                    return False
             else:
+                if DEBUG:
+                    print("DEBUG - No custom entry found in preloading configuration.")
                 pass
         else:
             pass
@@ -803,6 +874,48 @@ class Factory:
             print(f"FPL3 - Error while excluding images: {e}")
             raise BaseException(e)
         self.verify_preprocessed_images()
+
+    def load_export_separation(self) -> Union[int, bool]:
+        """
+        Loads the export separation configuration.
+
+        Returns:
+            int: Position of the separation factor in the naming convention (1-based index).
+            bool: False if the separation factor is not specified or is 'Nenhum'.
+
+        Raises:
+            ValueError: If the separation factor is invalid or not found.
+            Exception: For other errors while loading configurations.
+        """
+        try:
+            config = self.load_config()
+            custom = self.load_custom_preloading()
+
+            separating_factor = custom.get('exportSeparation')
+            naming_convention = config.get('NAMING_CONVENTION')
+
+            if not separating_factor or separating_factor == 'Nenhum':
+                return False
+
+            if not naming_convention:
+                raise ValueError("FLES2 - Naming convention not specified in the configuration.")
+
+            naming_convention_parts = re.split(r'[_-]', naming_convention)
+
+            if separating_factor in naming_convention_parts:
+                return naming_convention_parts.index(separating_factor) + 1
+
+            raise ValueError("FLES3 - Separating factor not found in naming convention.")
+
+        except KeyError as e:
+            print(f"FLES4 - Missing configuration key: {e}")
+            raise e
+        except ValueError as e:
+            print(f"FLES5 - Invalid value provided for export separation: {e}")
+            raise e
+        except Exception as e:
+            print("FLES1 - Error while loading export separation.")
+            raise e
 
     def verify_preprocessed_images(self):
         """Verify that images have been preprocessed.
@@ -989,9 +1102,10 @@ class Factory:
             if DEBUG:
                 print(f"DEBUG - Output_folder: {output_folder}")
 
-            separate_exports = self.commands_spec.get('export_separation', False)
+            separate_position = self.load_export_separation()
 
             results_dict = {}
+
             for image, model, result in results:
                 if image not in results_dict:
                     results_dict[image] = {}
@@ -1009,12 +1123,12 @@ class Factory:
                 print("DEBUG - Calling ResultsExporter with those parameters:")
                 print(f"DEBUG - Exportation formats: {self.exportation_formats}")
                 print(f"DEBUG - Output folder: {output_folder}")
-                print(f"DEBUG - Separate exports: {separate_exports}")
+                print(f"DEBUG - Separate exports: {separate_position}")
 
             exporter = ResultsExporter(
                 exportation_formats=self.exportation_formats,
                 output_folder=output_folder,
-                separate_exports=separate_exports
+                separate_exports=separate_position
             )
             exporter.export_results(results_dict)
         except Exception as e:
@@ -1029,36 +1143,30 @@ class Factory:
             If an error occurs while loading the binary, the exception is returned.
             If an error occurs while executing a command, the exception is returned.
         """
-        # Rest of the code...
         if DEBUG:
             print("DEBUG - Executing recipe...")
+        additional_parameter = []
         sequential_results = []
-        original_cwd = os.getcwd()
+        self.white_background = self.commands_spec.get('white_background', False)
+
         try:
             for command, value in self.commands.items():
                 if value:
                     if DEBUG:
                         print(f"DEBUG - Executing command {command}...")
-                    binary_path = None
-                    try:
-                        if (MODELS_PATH_BUILD).exists():
-                            binary_path = os.path.join(Path(MODELS_PATH_BUILD).resolve(), command + ".exe")
-                            os.chdir(MODELS_PATH_BUILD)
-                        elif (MODELS_PATH_DIST).exists():
-                            binary_path = os.path.join(Path(MODELS_PATH_DIST).resolve(), command + ".exe")
-                            os.chdir(MODELS_PATH_DIST)
-                    except Exception as e:
-                        print(f"FBIN1 - Error while loading binary: {e}")
-                        os.chdir(original_cwd)
-                        return e
-
+                    binary_path = self._get_binary_path(command)
+                    print(binary_path)
                     if binary_path:
                         try:
                             image_path = list(self.images.values())
                             try:
                                 if DEBUG:
                                     print(f"DEBUG - Executing BIN of {command}...")
-                                result = subprocess.check_output([binary_path] + image_path)
+                                full_command = [binary_path] + image_path
+                                print(full_command)
+                                result = subprocess.check_output(full_command)
+                                if DEBUG:
+                                    print([binary_path] + additional_parameter + image_path)
                                 result = result.decode('utf-8').strip()
                                 result_lines = result.split('\n')
                                 for line in result_lines:
@@ -1070,19 +1178,19 @@ class Factory:
                                         sequential_results.append((image_filename, command, result_values))
                             except Exception as e:
                                 print(f"FBIN2 - Error while executing {command}: {e}")
-                                return e
+                                traceback.print_exc()
+                                raise e
                         finally:
-                            os.chdir(original_cwd)
+                            os.chdir(self.ocwd)
                     else:
                         print(f"FBIN3 - Model {command} not found.")
-                        os.chdir(original_cwd)
+                        os.chdir(self.ocwd)
                 else:
                     if DEBUG:
                         print(f"DEBUG - Skipping command {command}...")
         except Exception as e:
             print(f"FER1 - Error while executing recipe: {e}")
             traceback.print_exc()
-            return e
         finally:
             if DEBUG:
                 print("DEBUG - Exporting results...")
@@ -1101,20 +1209,19 @@ class Factory:
         Raises:
             RuntimeError: If an error occurs while getting the binary path.
         """
-        """Find the correct binary path for the given command."""
+        self.white_background = self.commands_spec.get('white_background', False)
+        if command == 'root_color' or 'root_advanced_color':
+            if self.white_background:
+                additional_parameter = " --whitebg "
+                if DEBUG:
+                    print(f"DEBUG - Additional parameter: {additional_parameter}")
         try:
-            if (MODELS_PATH_BUILD).exists():
-                binary_path = os.path.join(Path(MODELS_PATH_BUILD).resolve(), command + ".exe")
-                if DEBUG:
-                    print(f"DEBUG - Changed directory to {MODELS_PATH_BUILD}")
-                return binary_path, MODELS_PATH_BUILD
-            elif (MODELS_PATH_DIST).exists():
-                binary_path = os.path.join(Path(MODELS_PATH_DIST).resolve(), command + ".exe")
-                if DEBUG:
-                    print(f"DEBUG - Changed directory to {MODELS_PATH_DIST}")
-                return binary_path, MODELS_PATH_DIST
-            else:
-                return None, None
+            binary_path = os.path.join(Path(self.models_path).resolve(), command + ".exe")
+            additional_parameter = additional_parameter if 'additional_parameter' in locals() else ""
+            binary_path = binary_path + additional_parameter
+            if DEBUG:
+                print(f"DEBUG - Binary path: {binary_path}")
+            return binary_path
         except Exception as e:
             traceback.print_exc()
             raise RuntimeError(f"FBIN1_P - Error while loading binary: {e}")
@@ -1193,7 +1300,7 @@ class Factory:
 
         try:
             config = self.load_config()
-            binary_path, models_path = self._get_binary_path(command)
+            binary_path = self._get_binary_path(command)
             if not binary_path:
                 if DEBUG:
                     print(f"DEBUG - Model {command} not found.")
@@ -1202,7 +1309,9 @@ class Factory:
             image_paths = list(self.images.values())
             results = []
 
-            with Utils().change_directory(models_path):
+            binary_dir = os.path.dirname(binary_path)
+
+            with Utils().change_directory(binary_dir):
                 if config['FORCE_MAXPERFORMANCE']:
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future_to_batch = {executor.submit(self._run_subprocess, binary_path, image_paths[i:i + self.batch_size]): i for i in range(0, len(image_paths), self.batch_size)}
@@ -1220,7 +1329,7 @@ class Factory:
                                     if DEBUG:
                                         print(f"DEBUG - Retrying with smaller batch {j // (self.batch_size // 2) + 1}: {retry_batch}")
                                     try:
-                                        result_lines = self._run_subprocess(binary_path, retry_batch)
+                                        result_lines = self._run_subprocess(str(binary_path), retry_batch)
                                         results.extend(self._process_results(result_lines, command))
                                     except Exception as retry_e:
                                         traceback.print_exc()
@@ -1234,7 +1343,6 @@ class Factory:
                             result_lines = self._run_subprocess(binary_path, batch)
                             results.extend(self._process_results(result_lines, command))
                         except Exception as e:
-
                             if DEBUG:
                                 print(f"DEBUG - Error while executing {command} on batch, retrying with smaller batch: {e}")
                             # Retry logic for smaller batch
@@ -1255,7 +1363,6 @@ class Factory:
         except Exception as outer_e:
             if DEBUG:
                 print(f"DEBUG - Outer exception caught: {outer_e}")
-            return [("FBIN2_P - Outer exception caught", outer_e)]
 
         return results
 
@@ -1325,7 +1432,7 @@ class Factory:
 
         if DEBUG:
             print("DEBUG - Recipes executed in parallel successfully, proceeding to export.")
-
+            print(f"DEBUG - Parallel results: {sequential_results}")
         self.export_results(sequential_results)
 
 

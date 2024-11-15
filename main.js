@@ -17,6 +17,7 @@ const microversion = "beta";
 
 const childProcess = require('child_process');
 const { log, error } = require('node:console');
+const { Logger } = require('winston');
 const configPath = path.join(__dirname, 'config.json');
 var firstSession = false;
 
@@ -80,8 +81,8 @@ function CreateConfig() {
   const defaultConfig = {
     "OUTPUT_DIR": "results",
     "OUTPUT_STANDART": "standart",
-    "GENOTYPE_STANDART": "Matrix-Gen-Rep",
-    "ENABLE_GENOTYPE": true,
+    "NAMING_CONVENTION": "Matrix-Gen-Rep",
+    "ENABLE_NAMING_SEPARATION": true,
     "ENABLE_DB": false,
     "FORCE_MAXPERFORMANCE": false,
     "DB_PATH": " ",
@@ -105,9 +106,8 @@ function readConfig(response=false) {
     if (config) {
       const output_dir = config.OUTPUT_DIR;
       const output_standart = config.OUTPUT_STANDART;
-      const genotype_standart = config.GENOTYPE_STANDART;
-      const enable_genotype = config.ENABLE_GENOTYPE;
-      const enable_batch = config.ENABLE_PHENOTYPE;
+      const naming_convention = config.NAMING_CONVENTION;
+      const enable_naming_separation = config.ENABLE_NAMING_SEPARATION;
       const force_maxperfomance =  config.FORCE_MAXPERFORMANCE;
       const enable_db = config.ENABLE_DB;
       const db_path = config.DB_PATH;
@@ -515,37 +515,47 @@ ipcMain.on('read-config', () => {
 
 // Ouvinte do evento 'write-config' do ipcMain
 ipcMain.on('write-config', (event, newConfig) => {
-  // Registra a nova configuraçao recebida no logger com nivel de debug
-  logger.log({ level: 'debug', message: `Nova configuracao: ${JSON.stringify(newConfig)}` });
-  
+  // Registra a nova configuração recebida no logger com nível de debug
+  logger.log({ level: 'debug', message: `Nova configuração: ${JSON.stringify(newConfig)}` });
+
   try {
-    // Le o conteúdo do arquivo de configuraçao
+    // Lê o conteúdo do arquivo de configuração
     const configFileContent = fs.readFileSync(configPath, 'utf8');
-    // Converte o conteúdo do arquivo de configuraçao de JSON para objeto
+    // Converte o conteúdo do arquivo de configuração de JSON para objeto
     const config = JSON.parse(configFileContent);
-    
-    // Atualiza o objeto de configuraçao com os novos valores
+
+    // Atualiza o objeto de configuração com os novos valores
     Object.keys(newConfig).forEach(key => {
       config[key] = newConfig[key];
     });
-    
-    // Converte o objeto de configuraçao atualizado de volta para JSON
+
+    // Converte o objeto de configuração atualizado de volta para JSON
     const updatedConfigContent = JSON.stringify(config, null, 2);
-    
-    // Escreve o conteúdo atualizado de volta no arquivo de configuraçao
-    fs.writeFileSync(configPath, updatedConfigContent);
-    // Registra no logger que o arquivo de configuraçao foi atualizado com sucesso
+
+    // Escreve o conteúdo atualizado de volta no arquivo de configuração
+    fs.writeFileSync(configPath, updatedConfigContent, 'utf8');
+    // Registra no logger que o arquivo de configuração foi atualizado com sucesso
     logger.log({ level: 'info', message: 'Arquivo config foi atualizado com sucesso.' });
+
+    // Envia uma resposta de sucesso para o processo renderer
+    event.sender.send('write-config-response', 'success');
   } catch (error) {
-    // Registra no logger qualquer erro que ocorra durante a escrita do arquivo de configuraçao
-    logger.log({ level: 'error', message: `Erro escrevendo o arquivo de configuracao: ${error}` });
+    // Registra no logger qualquer erro que ocorra durante a escrita do arquivo de configuração
+    logger.log({ level: 'error', message: `Erro escrevendo o arquivo de configuração: ${error}` });
+    // Envia uma resposta de erro para o processo renderer
+    event.sender.send('write-config-response', 'failure');
   }
 });
 
-// Ouvinte do evento 'request-genotype' do ipcMain
-ipcMain.on('request-genotype', (event) => {
+// Ouvinte do evento 'request-naming' do ipcMain
+ipcMain.on('request-naming', (event) => {
   const config = readConfig(true);
-  event.sender.send('genotype-response', config.ENABLE_GENOTYPE);
+  event.sender.send('naming-response', {
+    enableNamingSeparation: config.ENABLE_NAMING_SEPARATION,
+    namingConvention: config.NAMING_CONVENTION
+  });
+    logger.log({ level: 'debug', message: `Separacao de nomes ativada: ${config.ENABLE_NAMING_SEPARATION}` });
+    logger.log({ level: 'debug', message: `Convencao de nomes: ${config.NAMING_CONVENTION}` });
 });
 
 // Ouvinte do evento 'request-phenotype' do ipcMain

@@ -12,13 +12,13 @@ contextBridge.exposeInMainWorld('webUtils', {
 contextBridge.exposeInMainWorld('electron', {
     ipcRenderer: {
         send: (channel, data) => {
-            let validChannels = ['open-db-file-dialog'];
+            let validChannels = ['open-db-file-dialog', 'read-config', 'write-config'];
             if (validChannels.includes(channel)) {
                 ipcRenderer.send(channel, data);
             }
         },
         on: (channel, func) => {
-            let validChannels = ['selected-db-file'];
+            let validChannels = ['selected-db-file', 'config-response', 'write-config-response'];
             if (validChannels.includes(channel)) {
                 ipcRenderer.on(channel, (event, ...args) => func(...args));
             }

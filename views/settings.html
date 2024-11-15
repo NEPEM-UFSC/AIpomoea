@@ -106,7 +106,7 @@
             <div class="setting">
                 <label for="output-folder">Caminho padrão para resultados:</label>
                 <span id="output-folder" class="span-box"></span>
-                <input type="file" id="OUTPUT_DIR" style="display: none;" webkitdirectory>
+                <input type="file" id="OUTPUT_DIR" name="OUTPUT_DIR" style="display: none;" webkitdirectory>
                 <button class="customDirSelect" id="select-directory-button">Selecionar diretório customizado</button>
             </div>
         </div>
@@ -114,13 +114,15 @@
             <h4>Critério de nomeação</h4>
             <span id="wip">⚠️Em desenvolvimento...</span>
             <div class="setting">
-                <label for="database">Utilizar nomeação orientada a genótipos:</label>
-                <input type="checkbox" id="ENABLE_GENOTYPE" name="ENABLE_GENOTYPE">
+                <label for="database">Utilizar convenção de nomeação:</label>
+                <input type="checkbox" id="ENABLE_NAMING_SEPARATION" name="ENABLE_NAMING_SEPARATION">
             </div>
             <div class="setting">
                 <label for="naming-convention-files">Padrão de nomeação de arquivos:</label>
-                <select id="naming-convention-files" name="GENOTYPE_STANDART">
+                <select id="naming-convention-files" name="NAMING_CONVENTION">
                     <option value="Matrix-Gen-Rep">Matriz - Genótipo - Repetição</option>
+                    <option value="Matrix-Trat-Gen-Rep">Matriz - Efeito - Genótipo - Repetição</option>
+                    <option value="Local-Gen-Rep">Local - Genótipo - Repetição</option>
                     <option value="Gen-Rep">Genótipo - Repetição</option>
                     <option value="Trat-Gen-Rep">Efeito - Genótipo - Repetição</option>
                 </select>
@@ -128,7 +130,6 @@
         </div>
         <div class="section">
             <h4>Configuração de Modelos</h4>
-            <span id="wip">⚠️Em desenvolvimento...</span>
             <div class="settings-buttons">
                 <button class="purple-button" onclick="checkModels()">Verificar Modelos</button>
                 <button class="purple-button" onclick="checkModelsInfo()">Ver informações dos Modelos</button>
@@ -139,12 +140,11 @@
             <span id="wip">⚠️Configurações críticas, proceda com cuidado!</span>
             <div class="setting">
                 <label for="maxperformance">Habilitar modo de máxima performance:</label>
-                <input type="checkbox" id="FORCE_MAXPERFORMANCE" name="ENABLE_MAXPERFORMANCE">
+                <input type="checkbox" id="FORCE_MAXPERFORMANCE" name="FORCE_MAXPERFORMANCE">
             </div>
         </div>
         <div class="section">
             <h4>Configurações de Banco de dados</h4>
-            <span id="wip">⚠️Em desenvolvimento...</span>
         </div>
             <div class="setting">
                 <label for="database">Habilitar uso de Banco de dados SQLITE:</label>
@@ -153,7 +153,7 @@
             <div class="setting" id="db-path-settings">
                 <label for="database-path">Caminho da Database:</label>
                 <span id="database-path" class="span-box"></span>
-                <input type="file" id="DB_PATH" style="display: none;" accept=".db">
+                <input type="file" id="DB_PATH" name="DB_PATH" style="display: none;" accept=".db">
                 <button class="customDirSelect" id="select-database-button" onclick=openDBFileDialog()>Selecionar banco de dados</button>
             </div>
             <div class="setting" id="db-name-settings">
@@ -244,50 +244,42 @@
 <script src="../static/js/version.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-            readConfig();
-    });
-    
-    const enableDbCheckbox = document.getElementById('ENABLE_DB');
-    const dbSettings = document.getElementById('db-path-settings');
-    const dbNameSetting = document.getElementById('db-name-settings');
+        readConfig();
+        
+        const enableDbCheckbox = document.getElementById('ENABLE_DB');
+        const dbSettings = document.getElementById('db-path-settings');
+        const dbNameSetting = document.getElementById('db-name-settings');
 
-    enableDbCheckbox.addEventListener('change', function() {
-        if (enableDbCheckbox.checked) {
-            dbSettings.style.display = 'flex';
-            dbNameSetting.style.display = 'flex';
-        } else {
-            dbSettings.style.display = 'none';
-            dbNameSetting.style.display = 'none';
-        }
-
-
-    if (!enableDbCheckbox.checked) {
-            dbPathSetting.style.display = 'none';
-            dbNameSetting.style.display = 'none';
-        }
-    });
-    
-    document.addEventListener('DOMContentLoaded', function() {
-            const selectButton = document.getElementById('select-directory-button');
-            const outputDirInput = document.getElementById('OUTPUT_DIR');
-            const outputFolderSpan = document.getElementById('output-folder');
-            const databasePathSpan = document.getElementById('database-path');
-            const databasePathInput = document.getElementById('DB_PATH');
-
-            selectButton.addEventListener('click', function() {
-                outputDirInput.click();
-            });
-
-            outputDirInput.addEventListener('change', function(event) {
-                const files = event.target.files;
-                if (files.length > 0) {
-                    const firstFilePath = files[0].path;
-                    const directoryPath = firstFilePath.substring(0, firstFilePath.lastIndexOf('\\'));
-                    outputFolderSpan.textContent = directoryPath;
-                } else {
-                    outputFolderSpan.textContent = 'Nenhum diretório selecionado⚠️';
-                }
-            });
+        enableDbCheckbox.addEventListener('change', function() {
+            if (enableDbCheckbox.checked) {
+                dbSettings.style.display = 'flex';
+                dbNameSetting.style.display = 'flex';
+            } else {
+                dbSettings.style.display = 'none';
+                dbNameSetting.style.display = 'none';
+            }
         });
+
+        const selectButton = document.getElementById('select-directory-button');
+        const outputDirInput = document.getElementById('OUTPUT_DIR');
+        const outputFolderSpan = document.getElementById('output-folder');
+        const databasePathSpan = document.getElementById('database-path');
+        const databasePathInput = document.getElementById('DB_PATH');
+
+        selectButton.addEventListener('click', function() {
+            outputDirInput.click();
+        });
+
+        outputDirInput.addEventListener('change', function(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                const firstFilePath = files[0].path;
+                const directoryPath = firstFilePath.substring(0, firstFilePath.lastIndexOf('\\'));
+                outputFolderSpan.textContent = directoryPath;
+            } else {
+                outputFolderSpan.textContent = 'Nenhum diretório selecionado⚠️';
+            }
+        });
+    });
 </script>
 </html>
