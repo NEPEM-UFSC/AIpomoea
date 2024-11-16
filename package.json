@@ -1,19 +1,18 @@
 {
   "name": "aipomoea",
-  "productName": "Aipomoea",
-  "version": "0.7.0",
+  "productName": "AIpomoea",
+  "version": "0.7.1",
   "icon": "icone.ico",
   "description": "Tecnologia em Fenotipagem e Classificação",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "pack": "npx @electron/packager . Aipomoea --platform=win32 --arch=x64 --icon=icone.ico --out=dist --overwrite",
+    "pack": "npx @electron/packager . AIpomoea --platform=win32 --arch=x64 --icon=icone.ico --out=dist --overwrite",
     "dist": "npx electron-builder --win",
     "test": "echo \"No test specified\" && exit 0",
-    "last-log": "tail -f logs/last.log",
     "debug": "set debug=true && electron --inspect=5858 ."
   },
-  "repository": "https://github.com/matheus-lopesm/nepem-pibiti",
+  "repository": "https://github.com/NEPEM-UFSC/AIpomoea",
   "keywords": [
     "Electron",
     "Sweet Potato"
