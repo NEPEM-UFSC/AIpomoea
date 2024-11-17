@@ -1,5 +1,11 @@
 // verser.js - Version Checker
 // This file is used to check the version of the application and display a badge indicating if it is up-to-date or not.
+// Based on the implementation of the serverless function "NEPEMVERSER" available at https://nepemufsc.com/.netlify/functions/verser?project=AIpomoea
+// The version is displayed in the footer of the application and is checked against the latest version available on the server.
+// If the version is outdated, a badge is displayed with a link to the GitHub releases page for the user to download the latest version.
+// The badge is updated when the application is loaded and the latest version is fetched from the server.
+// This logic is based on the orthodox client side version checker implementation of NEPEMVERSER.
+
 
 const VERSER_URL = 'https://nepemufsc.com/.netlify/functions/verser?project=AIpomoea';
 const ERROR_MESSAGES = {
@@ -8,12 +14,25 @@ const ERROR_MESSAGES = {
   GENERAL_ERROR: 'Erro ao verificar a versão, verifique sua conexão ou contate o desenvolvedor.'
 };
 
+// Pedidos constantes
 ipcRenderer.send('request-version');
+
+/**
+* Updates the application's version display and global version variable.
+* @example
+* updateVersion(event, 'v1.0.0')
+* // Updates the DOM element with id 'app-version' to show 'v1.0.0' and sets window.version to 'v1.0.0'
+* @param {Event} _event - The event that triggers the version update.
+* @param {string} version - The version number to be displayed and stored globally.
+* @returns {void} No return value.
+* @description
+*   - Updates the text content of the element with the id 'app-version'.
+*   - Sets the global window.version variable to the provided version value.
+*/
 ipcRenderer.on('version-response', (_event, version) => {
     document.getElementById('app-version').textContent = version;
     window.version = version;
   });
-
 
 /**
   * Fetches the latest version from the server asynchronously.
@@ -36,32 +55,31 @@ ipcRenderer.on('version-response', (_event, version) => {
           if (error instanceof TypeError && error.message === 'Failed to fetch') {
               console.error('Error fetching the latest version: INTERNET_DISCONNECTED');
               return 'INTERNET_DISCONNECTED';
-          } else {
+          } 
               console.error('Error fetching the latest version:', error);
               return null;
-          }
       }
   };
   
 /**
-   * Updates the version information and UI elements based on the latest version.
-   *
+   * Checks the application version and updates the UI accordingly.
    * @example
-   * updateVersionBadge()
-   * // Updates UI components with the version status
-   *
-   * @param {void} None - No parameters are required.
-   * @returns {void} Updates UI elements indicating version status.
-   *
+   * checkAndUpdateVersion()
+   * undefined
+   * @async
+   * @function
+   * @param {void} N/A - This function does not take any arguments.
+   * @returns {Promise<void>} Promise that resolves when the UI has been updated based on the latest version check.
    * @description
-   * - Handles various states including 'INTERNET_DISCONNECTED', outdated versions, and errors.
-   * - Modifies DOM elements like badges, status text, and buttons based on version comparison.
-   * - Listens for click events to redirect users for updates if the version is outdated.
+   *   - Fetches the latest version of the application asynchronously.
+   *   - Updates the UI elements like badges, status text, and buttons based on the version comparison.
+   *   - Handles different states, such as internet disconnected or errors during fetching latest version.
+   *   - Adds an event listener to the update button to redirect users for downloading the latest version.
    */
   const updateVersionBadge = async () => {
     try {
       const latestVersion = await fetchLatestVersion();
-      console.log('Latest version:', latestVersion);
+      console.log('NEPEMVERSER, LATEST-VERSION: ', latestVersion);
       let currentVersion = await window.version;
       currentVersion = currentVersion.replace('Versao: ', '');
       currentVersion = currentVersion.replace('-beta', '');
@@ -91,6 +109,7 @@ ipcRenderer.on('version-response', (_event, version) => {
           statusText.textContent = 'Sua versão está desatualizada.';
           latestVersionSpan.textContent = latestVersion;
           latestVersionSpan.classList.remove('hidden');
+          latestVersionPC.classList.remove('hidden');
           updateButton.classList.remove('hidden');
           updateInfo.classList.remove('hidden');
   
@@ -104,7 +123,6 @@ ipcRenderer.on('version-response', (_event, version) => {
           statusText.textContent = 'Você está usando a versão mais recente.';
           updateButton.classList.add('hidden');
           updateInfo.classList.add('hidden');
-          latestVersionPC.classList.add('hidden');
         }
       } else {
         console.error('Latest version is null');
@@ -115,7 +133,6 @@ ipcRenderer.on('version-response', (_event, version) => {
       document.getElementById('update-status').textContent = ERROR_MESSAGES.GENERAL_ERROR;
     }
   };
-  
-window.onload = updateVersionBadge;
+
   
   
