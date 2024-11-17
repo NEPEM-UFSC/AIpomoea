@@ -7,7 +7,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "pack": "npx @electron/packager . AIpomoea --platform=win32 --arch=x64 --icon=icone.ico --out=dist --overwrite",
+    "pack": "npx @electron/packager . AIpomoea --platform=win32 --arch=x64 --icon=icone.ico --out=dist --overwrite --prune",
     "dist": "npx electron-builder --win",
     "test": "echo \"No test specified\" && exit 0",
     "debug": "set debug=true && electron --inspect=5858 ."
@@ -20,8 +20,8 @@
   "author": "NEPEM - UFSC",
   "license": "CC0-1.0",
   "devDependencies": {
-    "@electron/packager": "^18.3.3",
     "electron": "^33.0.0",
+    "@electron/packager": "^18.3.3",
     "electron-builder": "^24.13.3"
   },
   "dependencies": {
