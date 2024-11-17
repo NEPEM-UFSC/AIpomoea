@@ -1,5 +1,5 @@
 /* styles.css */
-/* Define color variables */
+
 :root {
     --primary--purple-color: #46316a;
     --dim-gray: #696969;
@@ -116,7 +116,7 @@ nav ul li {
     margin: 0 10px;
 }
 nav ul li a {
-    position: relative; /* Adicione position relative */
+    position: relative;
     display: flex;
     text-decoration: none;
     color: white;
@@ -151,7 +151,7 @@ nav ul li a:hover span {
 }
 
 nav ul li a:hover img {
-    opacity: 0; /* Esconde o ícone quando o hover é acionado */
+    opacity: 0;
 }
 .app-version {
     position: fixed;
