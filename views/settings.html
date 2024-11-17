@@ -31,8 +31,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 16px; /* Espaçamento entre os botões */
-            margin-top: 20px; /* Ajuste conforme necessário */
+            gap: 16px;
+            margin-top: 20px;
         }
 
         .settings-buttons button {
@@ -112,7 +112,6 @@
         </div>
         <div class="section">
             <h4>Critério de nomeação</h4>
-            <span id="wip">⚠️Em desenvolvimento...</span>
             <div class="setting">
                 <label for="database">Utilizar convenção de nomeação:</label>
                 <input type="checkbox" id="ENABLE_NAMING_SEPARATION" name="ENABLE_NAMING_SEPARATION">
@@ -202,7 +201,7 @@
                 </div>
                 <p>Os seguintes modelos falharam na verificação:</p>
                 <ul id="model-error-list">
-                    <!-- Lista de modelos inválidos -->
+                    <!-- Lista de modelos com erro -->
                 </ul>
                 <button class="close-button" onclick="closePopup('model-error-popup')">Fechar</button>
             </div>
@@ -213,8 +212,6 @@
                     <img src="../static/images/models.svg" alt="Modelos">
                 </div>
                 <h3>Informações dos Modelos</h3>
-                
-                <!-- Tabela para exibir os dados do JSON -->
                 <table id="models-table">
                     <thead>
                         <tr>

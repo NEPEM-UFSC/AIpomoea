@@ -52,7 +52,18 @@ function isErrorPopupActive() {
     return errorPopup && errorPopup.style.display === 'flex';
 }
 
-
+/**
+* Displays a specified popup if conditions are met.
+* @example
+* showPopup('success-popup')
+* // Popup will display if 'error-popup' is not active
+* @param {string} popupId - The ID of the popup to be displayed.
+* @returns {void} Does not return a value.
+* @description
+*   - Checks if an error popup is active before displaying another popup.
+*   - Ensures the loading popup is hidden when displaying the popup.
+*   - Activates a CSS class on the popup overlay to manage visibility.
+*/
 function showPopup(popupId) {
     if (isErrorPopupActive() && popupId !== 'error-popup') {
         console.log('Não é possível exibir o popup de sucesso enquanto o popup de erro estiver ativo.');
@@ -64,6 +75,7 @@ function showPopup(popupId) {
     document.querySelector('.popup-overlay').classList.add('active');
     document.getElementById(popupId).style.display = 'flex';
 }
+
 /**
 * Closes the specified overlay and any popups.
 * @example

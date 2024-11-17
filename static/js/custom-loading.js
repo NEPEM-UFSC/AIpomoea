@@ -57,32 +57,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Executes a custom loading functionality based on selected option and custom input.
+ * Executes the loading process by gathering user inputs and sending them for further processing.
  * @example
  * executeCustomLoading()
- * Logs selected option and custom entry, sends them via ipcRenderer.
- * @param {void} - This function does not take any arguments.
- * @returns {void} This function does not return anything.
+ * undefined
+ * @param {void} No parameters are expected.
+ * @returns {void} Does not return any value.
  * @description
- *   - Fetches selected option and custom entry from DOM.
- *   - Logs and stores the fetched values.
- *   - Sends stored values using ipcRenderer.
- *   - Handles errors during IPC communication with a try-catch block.
+ *   - Collects values from user input fields and dropdowns on the interface.
+ *   - Sends the collected values as an object for inter-process communication.
+ *   - Logs an error message if there is an issue with sending the data.
  */
 function executeCustomLoading() {
     const selectedOption = document.querySelector('#textOption').value;
     const customEntry = document.querySelector('#textInput').value;
-    const exportSeparation = document.querySelector('#exportSeparationDropdown').value; // Get selected dropdown value
+    const exportSeparation = document.querySelector('#exportSeparationDropdown').value;
 
-    // Armazenar os valores conforme necessário
     const storedValues = {
         selectedOption,
         customEntry,
-        exportSeparation // Add exportSeparation to stored values
+        exportSeparation
     };
 
     try {
-        ipcRenderer.send('receive-custom', storedValues); // Pass the storedValues as a single object
+        ipcRenderer.send('receive-custom', storedValues);
     } catch (e) {
         console.error('Erro ao enviar comandos:', e);
     }

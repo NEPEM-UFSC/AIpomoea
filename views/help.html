@@ -40,6 +40,27 @@
             align-items: center;
             gap: 10px;
         }
+        .faq-item {
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 10px;
+            border: 1px solid #000000;
+            border-radius: 10px;
+            width: 75vw;
+            max-height: 275px;
+            text-align: center;
+        }
+        .faq-item h3 {
+            font-size: 21px;
+        }
+        .faq-item p {
+            font-size: 16px;
+            color: #3b3b3b;
+        }
     </style>
 </head>
 <body>
@@ -58,24 +79,48 @@
     <section class="help">
         <div class="help-header">
             <h2>Ajuda</h2>
-            <p>Encontre informações úteis sobre o projeto.</p>
+            <p>Encontre aqui algumas informações úteis sobre o aplicativo, guia de uso e contato.</p>
         </div>
     </section>
     <section class="faq">
         <div class="faq-header">
             <h2>Perguntas frequentes</h2>
-            <p>Confira as perguntas mais frequentes sobre o projeto.</p>
+            <div class="faq-item">
+                <h3>Como deve ser a nomeação dos arquivos?</h3>
+                <p>Para utilizar as ferramentas de convenção de nomeação, os nomes dos arquivos das imagens devem possuir alguma das estruturas, dividido por "-" ou "_".</p>
+            </div>
+            <div class="faq-item">
+                <h3>Onde encontro o guia e a documentação completa?</h3>
+                <p>O guia pode ser encontrado na seção abaixo, a documentação está disponível no repositório do aplicativo no github;</p>
+            </div>
+            <div class="faq-item">
+                <h3>Como reporto um problema?</h3>
+                <p>Para reportar um problema, abra uma issue no repositório do GitHub ou entre em contato através do email fornecido na seção de Contato.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Como faço para atualizar o aplicativo?</h3>
+                <p>Para atualizar o aplicativo, acesse a seção de Atualizar no menu superior e siga as instruções, caso seu aplicativo se encontrar desatualizado.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Como faço para alterar as configurações?</h3>
+                <p>Para alterar as configurações, acesse a seção de Configurações no menu superior e siga as instruções.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Como faço para utilizar o aplicativo?</h3>
+                <p>Para utilizar o aplicativo, acesse a seção de Início no menu superior, selecione qual parte da planta deseja analisar, adicione as imagens e os comandos que deseja processar e o formato de saída desejável, para mais informações consulte o guia de uso.</p>
+            </div>
+            <div class="faq-item">
+                <h3>O que é o modo de máxima performance?</h3>
+                <p>Este modo força o uso de processamentos paralelos e de multiplos núcleos do CPU, levando a consideraveis ganhos de performance, porém com grande custo de recursos, essa opção pode afetar a estabilidade do aplicativo em alguns computadores, não é recomendável seu uso em máquinas fracas, para maiores informações consulte o guia de uso.</p>
+            </div>
     </section>
     <section class="documentation">
         <div class="documentation-header">
-            <h2>Documentação</h2>
-            <p>Para informações mais detalhadas, consulte a documentação do projeto.</p>
+            <h2>Guia de Uso</h2>
+            <p>Para informações mais detalhadas, consulte este guia de uso.</p>
         </div>
         <div class="badge-container">
-            <!-- <a href="https://www.notion.so/seu-projeto" target="_blank" rel="noopener">
-                <img src="../static/images/badges/NOTION.svg" alt="Notion" >
-            </a> -->
-            <a href="path_to_help_pdf.pdf" target="_blank">
+            <a href="../documentation/Guia de uso - AIpomoea.pdf" target="_blank">
                 <img src="../static/images/badges/PDF.svg" alt="PDF" >
             </a>
         </div>
