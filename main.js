@@ -13,7 +13,7 @@ if (process.env.debug) {
 } else DEBUG = false;
 
 const appVersion = app.getVersion();
-const microversion = "beta";
+const microversion = "release candidate";
 
 const childProcess = require('child_process');
 const { log, error } = require('node:console');
