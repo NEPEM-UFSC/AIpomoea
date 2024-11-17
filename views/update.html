@@ -107,7 +107,7 @@
         </div>
         <div class="update-container">
             <p id="update-status" class="version-text">Verificando atualizações...</p>
-            <pc id="latest-version-pc">Uma nova versão <span id="latest-version" class="version-text"></span> está disponível.</pc>
+            <pc id="latest-version-pc" class="hidden">Uma nova versão <span id="latest-version" class="version-text"></span> está disponível.</pc>
         </div>
         <div class="update-container">    
             <button id="update-button" class="hidden update-button">Atualizar Agora</button>
@@ -118,7 +118,7 @@
 <script src="../static/js/version.js"></script>
 <script>
 try {
-updateVersionBadge();
+window.onload = updateVersionBadge;
 } catch (error) {	
 console.error(error);
 loadingSpinner.style.display = "none";
