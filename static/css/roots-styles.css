@@ -170,6 +170,11 @@ body {
     color: white;
 }
 
+.operation-item input[type="checkbox"]:disabled + label {
+    background-color: #f0f0f0;
+    color: #ccc;
+    cursor: not-allowed;
+}
 
 .mode-dropdown {
     position: relative;

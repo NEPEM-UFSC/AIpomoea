@@ -151,10 +151,13 @@
 <script src="../static/js/send-commands.js"></script> 
 <script src="../static/js/receive-response.js"></script>
 <script src="../static/js/custom-loading.js"></script>
+<script src="../static/js/commands-check.js"></script>
 <script>
-    var prevButton = document.getElementById('prevImageButton');
-    var nextButton = document.getElementById('nextImageButton');
-    var fileInput = document.getElementById('fileInput');
+document.addEventListener('DOMContentLoaded', checkAndBlockOperations);
+
+var prevButton = document.getElementById('prevImageButton');
+var nextButton = document.getElementById('nextImageButton');
+var fileInput = document.getElementById('fileInput');
 
     function setMode(modeName) {
         window.location.hash = modeName;
@@ -182,6 +185,6 @@
             fileInput.style.display = 'none';
         }
         return false;
-        }
+    }
 </script>
 </html>
