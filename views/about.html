@@ -15,6 +15,10 @@
             gap: 20px;
             margin-bottom: 20px;
         }
+        .about h1, .about h2, .about p {
+            margin: 10px 50px; /* Ajusta a margem dos textos */
+            text-align: center;
+        }
         .badge-container {
             display: flex;
             flex-wrap: wrap;
@@ -22,20 +26,39 @@
             justify-content: center;
             padding: 20px;
         }
-
+        
         .badge-container img {
             height: 32px;
         }
-
+        
         .contact-container {
             display: flex;
             justify-content: center;
             gap: 10px;
             margin-top: 20px;
         }
-
+        
         .contact-container a img {
             height: 24px;
+        }
+        
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            place-items: center;
+            margin-top: 20px;
+        }
+        
+        .logos {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logos img {
+            height: 180px;
+            object-fit: contain
         }
     </style>
 </head>
@@ -54,12 +77,15 @@
     </header>
     <section class="about">
         <h1>Sobre</h1>
-        <p2>Este projeto é uma iniciação tecnológica (PIBITI-CNPQ) que representa uma parceria inovadora entre o Núcleo de Estudos e Pesquisas em Experimentação e Melhoramento Vegetal (NEPEM-UFSC) e o Núcleo de Estudos em Olericultura de Santa Catarina (NEOSC-UFSC). O objetivo principal é estabelecer um protocolo avançado de fenotipagem de alto rendimento para a batata-doce (Ipomoea batatas L.).</p>
+        <p>
+            Este projeto, desenvolvido no âmbito de uma iniciação tecnológica (PIBITI-CNPQ), surge como uma parceria inovadora entre o Núcleo de Estudos e Pesquisas em Experimentação e Melhoramento Vegetal (NEPEM-UFSC) e o Núcleo de Estudos em Olericultura de Santa Catarina (NEOSC-UFSC). Ele visa revolucionar a fenotipagem da batata-doce (Ipomoea batatas L.) por meio de tecnologias avançadas e abordagens inovadoras, propondo um protocolo de alto rendimento que alia precisão, eficiência e acessibilidade.
+        </p>
         <h2>Tecnologia empregada:</h2>
-        <p2>O projeto emprega tecnologias de ponta, incluindo visão computacional, aprendizado de máquina e outros métodos analíticos sofisticados, com o objetivo de reduzir a subjetividade na análise de dados. Nosso objetivo é otimizar a classificação dos acessos genéticos de batata-doce em aspectos vitais como qualidade, tamanho, conformação, resistência a doenças e características biométricas. Este esforço é essencial para promover uma agricultura mais avançada, eficiente e nutritiva.</p>
-        <p2>Esperamos que este projeto contribua significativamente para o avanço da agricultura e o melhoramento vegetal.</p>
+        <p>
+            O projeto utiliza ferramentas de última geração, incluindo visão computacional, aprendizado de máquina e métodos analíticos sofisticados, permitindo uma análise automatizada, precisa e objetiva de características fenotípicas das plantas. Entre os objetivos estão a classificação e qualificação de aspectos cruciais como qualidade comercial, tamanho, formato, coloração, resistência a doenças e características biométricas. Além disso, o uso de tecnologias compactas e otimizadas assegura a operação em cenários locais, com armazenamento eficiente e autonomia on-premise.
+        </p>
         <h2>Desenvolvedores:</h2>
-        <p2 style="text-align: center;">Este projeto foi desenvolvido por: Matheus L. Machado</p>
+        <p style="text-align: center;">Este projeto foi desenvolvido por: Matheus L. Machado sob orientação de Tiago Olivoto.</p>
         <div class="contact-container">
             <a href="https://github.com/matheus-lopesm/" target="_blank" rel="noopener">
                 <img src="../static/images/badges/GITHUB.svg" alt="GitHub">
@@ -79,6 +105,18 @@
             <img src="../static/images/badges/TENSORFLOW.svg" alt="TensorFlow">
             <img src="../static/images/badges/PANDAS.svg" alt="Pandas">
             <img src="../static/images/badges/SQLITE.svg" alt="SQLite">
+        </div>
+        <div class="logo-container">
+            <p>Este projeto foi desenvolvido pelo Núcleo de Estudos e Pesquisas em Experimentação e Melhoramento Vegetal (NEPEM) da Universidade Federal de Santa Catarina.</p>
+            <div class="logos">
+                <a href="https://nepemufsc.com" target="_blank" rel="noopener">
+                    <img src="../static/images/nepem-logo.svg" alt="NEPEM-UFSC">
+                </a>
+
+            <a href="https://ufsc.br" target="_blank" rel="noopener">
+                <img src="../static/images/ufsc-logo.svg" alt="UFSC">
+            </a>
+        </div>
         </div>
         <footer class="app-version" id="app-version">
             Versão:
