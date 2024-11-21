@@ -82,7 +82,6 @@ ipcRenderer.on('version-response', (_event, version) => {
       console.log('NEPEMVERSER, LATEST-VERSION: ', latestVersion);
       let currentVersion = await window.version;
       currentVersion = currentVersion.replace('Versao: ', '');
-      currentVersion = currentVersion.replace('-release candidate', '');
       const badgeElement = document.getElementById('version-badge');
       const loadingSpinner = document.getElementById('loading-spinner');
       const statusText = document.getElementById('update-status');
