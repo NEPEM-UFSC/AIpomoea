@@ -7,6 +7,7 @@
     <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
     <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
     <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/spinner.css">
     <style>
         .version-container {
             display: flex;
@@ -98,14 +99,15 @@
     </header>
     <section class="update">
         <div class="version-container">
-            <img id="version-badge" alt="Status da Versão" class="badge">
+            <div id="loading-spinner" class="loading-spinner"></div>
+            <img id="version-badge" alt="Status da Versão" class="badge hidden">
         </div>
         <div class="version-container">    
            <pc> Sua versão atual é <span id="app-version" class="version-text"></span> </pc>
         </div>
         <div class="update-container">
             <p id="update-status" class="version-text">Verificando atualizações...</p>
-            <pc id="latest-version-pc">Uma nova versão <span id="latest-version" class="version-text"></span> está disponível.</pc>
+            <pc id="latest-version-pc" class="hidden">Uma nova versão <span id="latest-version" class="version-text"></span> está disponível.</pc>
         </div>
         <div class="update-container">    
             <button id="update-button" class="hidden update-button">Atualizar Agora</button>
@@ -115,6 +117,12 @@
 </body>
 <script src="../static/js/version.js"></script>
 <script>
-updateVersionBadge();
+try {
+window.onload = updateVersionBadge;
+} catch (error) {	
+console.error(error);
+loadingSpinner.style.display = "none";
+versionbadge.src = "../static/images/error.svg";
+}
 </script>
 </html>

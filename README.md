@@ -20,18 +20,23 @@ Importância
 A batata-doce é um alimento essencial em muitas culturas devido ao seu valor nutricional e adaptabilidade a diferentes condições climáticas. Melhorar a eficiência e precisão na fenotipagem pode resultar em cultivares mais resistentes e nutritivas, beneficiando produtores e consumidores.
 
 ## Tecnologia Empregada
+
 O projeto emprega uma variedade de tecnologias avançadas:
 
 ### Visão computacional
+
 Utilizamos técnicas de visão computacional para capturar e analisar imagens das plantas, permitindo a extração de características biométricas com alta precisão.
 
 ### Aprendizado de Máquina
+
 Aplicamos algoritmos de aprendizado de máquina para analisar os dados coletados, melhorando a precisão na classificação e identificação de características importantes das plantas.
 
 ### Métodos analíticos sofisticados
+
 Empregamos outros métodos estatísticos e analíticos avançados para reduzir a subjetividade e aumentar a eficiência na análise dos dados fenotípicos.
 
 ## Objetivos e resultados esperados
+
     - Otimização na classificação dos acessos genéticos de batata-doce.
     - Melhoria na qualidade e eficiência dos processos de melhoramento vegetal.
     - Desenvolvimento de cultivares mais resistentes a doenças e com melhores características biométricas.
@@ -47,7 +52,6 @@ Um guia prático do projeto está disponível em forma .pdf
 ## Contato
 
 Para mais informações ou dúvidas, entre em contato com o desenvolvedor [Email](mailto:matheuslmachado03@gmail.com)
-
 
 ## Licença
 

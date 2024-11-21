@@ -8,6 +8,7 @@
     <link rel="stylesheet" type="text/css" href="../static/css/leaves-styles.css">
     <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
     <link rel="stylesheet" type="text/css" href="../static/css/popup.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/spinner.css">
 </head>
 <body>
     <header>
@@ -54,7 +55,7 @@
             <section class="preloading"></section>
                 <h2 style="margin-right: 1200px; margin-bottom: 0;">Configurações:</h3>
                 <h3 style="margin-right: 50px; display: none;">Pré-carregamento</h3>
-                <div class="preloading-genotype" style="display: none;">
+                <div class="preloading-naming" style="display: none;">
                     <div class="text-options">
                         <select id="textOption">
                             <option value="selectOnly">Incluir</option>
@@ -63,9 +64,13 @@
                         <input type="text" id="textInput" placeholder="Insira a configuração.">
                     </div>
                 </div>
-                <div class="preloading-genotype" style="display: none;">
-                    <input type="checkbox" id="export-separation">
-                    <label for="export-separation">Separar resultados por fator.</label>
+                <div class="preloading-naming" style="display: none;">
+                    <label for="exportSeparationDropdown">Separar resultados por: </label>
+                    <select id="exportSeparationDropdown"></select>
+                </div>
+                <div class="preloading-commands-specs">
+                    <input type="checkbox" id="white-background">
+                    <label for="white-background">Imagem possui fundo muito claro.</label>
                 </div>
             </section>
             <section class="operations">
@@ -83,16 +88,20 @@
                     <label for="leaves-color">Cor</label>
                 </div>
                 <div class="operation-item">
-                    <input type="checkbox" id="leaves-advanced-color">
-                    <label for="leaves-advanced-color">Cor Avançada</label>
-                </div>
-                <div class="operation-item">
                     <input type="checkbox" id="leaves-format-type">
                     <label for="leaves-format-type">Formato</label>
                 </div>
                 <div class="operation-item">
-                    <input type="checkbox" id="leaves-advanced-format">
-                    <label for="leaves-advanced-format">Formato Avançado</label>
+                    <input type="checkbox" id="leaves-pigmentation">
+                    <label for="leaves-pigmentation">Pigmentação</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="leaves-pcv">
+                    <label for="leaves-pcv">Valor de Complexidade do Perimetro</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="leaves-leaf-area">
+                    <label for="leaves-leaf-area">Área da Folha</label>
                 </div>
             </section>
             <section class="export-type">
@@ -153,8 +162,10 @@
 <script src="../static/js/send-commands.js"></script>
 <script src="../static/js/receive-response.js"></script> 
 <script src="../static/js/custom-loading.js"></script>
-</body>
+<script src="../static/js/commands-check.js"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', checkAndBlockOperations);
+
     var prevButton = document.getElementById('prevImageButton');
     var nextButton = document.getElementById('nextImageButton');
     var fileInput = document.getElementById('fileInput');
@@ -186,7 +197,6 @@
         }
 
         return false;
-        }
-
+    }
 </script>
 </html>

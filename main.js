@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcRenderer } = require('electron')
-const path = require('node:path')
+const { app, BrowserWindow, ipcRenderer, dialog } = require('electron')
+const path = require('path')
 const fs = require('fs');
+const { execFile } = require('child_process');
 const { ipcMain } = require('electron');
 const logger = require('./tools/logger');
 logger.level = 'info';
@@ -12,14 +13,14 @@ if (process.env.debug) {
 } else DEBUG = false;
 
 const appVersion = app.getVersion();
-const microversion = "beta";
+const microversion = "release candidate";
 
 const childProcess = require('child_process');
 const { log, error } = require('node:console');
+const { Logger } = require('winston');
 const configPath = path.join(__dirname, 'config.json');
 var firstSession = false;
 
-// Inicializar o logger
 logger.log({ level: 'info', message: 'Iniciando app.' });
 if (fs.existsSync(configPath)) {
   logger.log({ level: 'info', message: 'Dir de configuracao:', path: configPath });
@@ -77,17 +78,19 @@ function CreateSessionFile() {
  */
 function CreateConfig() {
   const defaultConfig = {
-    "OUTPUT_DIR": "results",
+    "OUTPUT_DIR": "",
     "OUTPUT_STANDART": "standart",
-    "GENOTYPE_STANDART": "Matrix-Gen-Rep",
-    "ENABLE_GENOTYPE": true,
+    "NAMING_CONVENTION": "Matrix-Gen-Rep",
+    "ENABLE_NAMING_SEPARATION": true,
+    "FORCE_MAXPERFORMANCE": false,
     "ENABLE_DB": false,
-    "DB_PATH": " ",
+    "DB_PATH": "",
     "DB_NAME": "aipomoea"
   };
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
   logger.log({ level: 'info', message: 'Arquivo de configuracao criado com valores padrao.' });  
 }
+
 /**
  * Reads the configuration file and returns the parsed configuration object.
  * 
@@ -102,9 +105,9 @@ function readConfig(response=false) {
     if (config) {
       const output_dir = config.OUTPUT_DIR;
       const output_standart = config.OUTPUT_STANDART;
-      const genotype_standart = config.GENOTYPE_STANDART;
-      const enable_genotype = config.ENABLE_GENOTYPE;
-      const enable_batch = config.ENABLE_PHENOTYPE;
+      const naming_convention = config.NAMING_CONVENTION;
+      const enable_naming_separation = config.ENABLE_NAMING_SEPARATION;
+      const force_maxperfomance =  config.FORCE_MAXPERFORMANCE;
       const enable_db = config.ENABLE_DB;
       const db_path = config.DB_PATH;
       const db_name = config.DB_NAME;
@@ -124,46 +127,88 @@ function readConfig(response=false) {
 }
 
 /**
- * Loads models from the specified directory and saves them in a JSON file.
+ * Loads models from the specified directory, gathers detailed info from each .exe,
+ * and saves all in a single JSON file.
  */
 function loadModels() {
-  const modelsPath = path.join(__dirname, 'models');
+  logger.log({ level: 'info', message: 'realizando models_check "MODELSINFO" ' });
+  const MODELS_PATH = path.join(__dirname, 'models');
   const models = {
-    root: [],
-    leaves: []
+      root: [],
+      leaves: [],
+      details: {}
   };
-  
-  try {
-    fs.readdir(modelsPath, (err, files) => {
-      if (err) {
-        logger.log({ level: 'error', message: `Erro ao tentar ler o diretorio de modelos: ${err}` });
-        return;
-      }
-  
-      files.forEach((file) => {
-        if (file.endsWith('.exe')) {
-          const modelName = file.replace('.exe', '');
-          if (modelName.startsWith('root_')) {
-            models.root.push(modelName);
-          } else if (modelName.startsWith('leaves_')) {
-            models.leaves.push(modelName);
-          }
-        }
-      });
 
-      try {
-        const modelsJsonPath = path.join(__dirname, 'models.json');
-        fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
-        logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
-        logger.log({ level: 'debug', message: `Modelos: ${JSON.stringify(models)}` });
-      } catch (writeErr) {
-        logger.log({ level: 'error', message: `Erro ao tentar salvar models.json: ${writeErr}` });
-      }
-    });
+  try {
+      fs.readdir(MODELS_PATH, (err, files) => {
+          if (err) {
+              logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
+              return;
+          }
+          const exeFiles = files.filter(file => file.endsWith('.exe'));
+
+          exeFiles.forEach((file) => {
+              const modelName = file.replace('.exe', '');
+              if (modelName.startsWith('root_')) {
+                  models.root.push(modelName);
+              } else if (modelName.startsWith('leaves_')) {
+                  models.leaves.push(modelName);
+              }
+          });
+
+          const modelsJsonPath = path.join(__dirname, 'models.json');
+          fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+          logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
+
+          exeFiles.forEach((file) => {
+              const filePath = path.join(MODELS_PATH, file);
+              const basename = path.basename(file, '.exe');
+
+              execFile(filePath, ['--info'], (error, stdout) => {
+                  if (error) {
+                      logger.log({ level: 'error', message: `Erro ao processar ${basename}: ${error.message}` });
+                      return;
+                  }
+
+              // Sanitização aprimorada do stdout
+              const sanitizedOutput = stdout
+                .split('*')                              // Divide pelo delimitador '*'
+                .map(info => info.replace(/\*/g, '').trim()) // Remove todos os '*' e espaços
+                .filter(info => info);  
+
+              if (sanitizedOutput[0] === '') {
+                    sanitizedOutput.shift();  // Remove o primeiro elemento
+              }
+                
+              // Definimos variáveis apenas se houver um número esperado de campos
+              if (sanitizedOutput.length >= 5) {
+                  const [model_name, arc_name, arc_version, dataset, bin_eval_name] = sanitizedOutput;
+
+                  models.details[basename] = {
+                      model_name: model_name || "Desconhecido",
+                      arc_name: arc_name || "N/D",
+                      arc_version: arc_version || "N/D",
+                      dataset: dataset || "N/D",
+                      bin_eval_name: bin_eval_name || "N/D"
+                  };
+
+                  try {
+                      fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+                      logger.log({ level: 'info', message: `Detalhes de ${basename} adicionados ao models.json` });
+                  } catch (writeErr) {
+                      logger.log({ level: 'error', message: `Erro ao tentar atualizar models.json: ${writeErr}` });
+                  }
+              } else {
+                  logger.log({ level: 'warn', message: `Formato de saída inesperado para ${basename}, dados ignorados.` });
+              }
+              });
+          });
+      });
   } catch (err) {
-    logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
+      logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
   }
 }
+
 /**
  * Creates a window and loads the appropriate HTML file based on the firstSession flag.
  * @function createWindow
@@ -256,6 +301,15 @@ app.on('window-all-closed', () => {
 app.quit();
 });
 
+/**
+ * Removes all uploaded files from the 'uploads' directory.
+ *
+ * This function reads the 'uploads' directory and attempts to delete each file found.
+ * It logs errors if it encounters issues reading the directory or deleting files,
+ * and logs success messages when files are successfully deleted.
+ *
+ * @returns {void}
+ */
 function removeUploadedFiles() {
   fs.readdir(path.join(__dirname, 'uploads'), (err, files) => {
     if (err) {
@@ -295,58 +349,57 @@ ipcMain.on('request-version', (event) => {
 ipcMain.on('upload-image', (event, filePaths) => {
   // Registra uma mensagem de informaçao indicando que a imagem esta sendo recebida.
   logger.log({ level: 'info', message: 'Recebendo imagem.' });
+  logger.log({ level: 'debug', message: `Caminhos dos arquivos: ${filePaths}` });
+  if (filePaths.length === 0) {
+    logger.log({ level: 'error', message: 'Nenhuma imagem selecionada.' });
+    throw new Error('Nenhum caminho passado');
+  }
+  try {
+    if (Array.isArray(filePaths) && filePaths.length > 0) {
+      filePaths.forEach((originalPath) => {
+        if (typeof originalPath === 'string') {
+          const filename = path.basename(originalPath);
+          const savePath = path.join(__dirname, 'uploads', filename);
   
-  // Itera sobre os caminhos dos arquivos fornecidos.
-  filePaths.forEach((originalPath) => {
-    // Obtem o nome do arquivo a partir do caminho original.
-    const filename = path.basename(originalPath);
-    
-    // Define o caminho onde a imagem sera salva.
-    const savePath = path.join(__dirname, 'uploads', filename);
-
-    // Copia o arquivo do caminho original para o caminho de salvamento.
-    fs.copyFile(originalPath, savePath, (err) => {
-      if (err) {
-        // Registra uma mensagem de erro se a copia falhar.
-        logger.log({ level: 'error', message: `Erro ao salvar a imagem: ${err}` });
-        
-        // Envia uma resposta de erro para o processo renderer.
-        event.sender.send('upload-image-response', 'Erro ao fazer upload da imagem.');
-        return;
-      }
-      
-      // Registra uma mensagem de sucesso se a imagem for salva com sucesso.
-      logger.log({ level: 'info', message: `Imagem salva com sucesso: ${savePath}` });
-      
-      // Envia uma resposta de sucesso para o processo renderer.
-      event.sender.send('upload-image-response', 'Imagem enviada com sucesso!');
-    });
-  });
+          fs.copyFile(originalPath, savePath, (err) => {
+            if (err) {
+              logger.log({ level: 'error', message: `Erro ao salvar a imagem: ${err}` });
+              
+              event.sender.send('upload-image-response', 'Erro ao fazer upload da imagem.');
+              return;
+            }
+            
+            logger.log({ level: 'info', message: `Imagem salva com sucesso: ${savePath}` });
+            
+            event.sender.send('upload-image-response', 'Imagem enviada com sucesso!');
+          });
+        } else {
+          logger.log({ level: 'error', message: 'Caminho do arquivo inválido: não é uma string.' });
+        }
+      });
+    } else {
+      logger.log({ level: 'error', message: 'Nenhum caminho de arquivo fornecido ou caminho de arquivo inválido.' });
+    }
+  } catch (error) {
+    logger.log({ level: 'error', message: `Erro inesperado: ${error}` });
+  }
 });
 
 // Configura um listener para o evento 'run-factory' emitido do processo renderer.
 ipcMain.on('run-factory', (event, args) => {
-  // Define o caminho para o executavel do Python e para o script Factory.
   const PY_PATH = path.join(__dirname, 'python', 'python.exe');
   const FAC_PATH = path.join(__dirname, 'tools', 'factory.py');
 
-  // Registra uma mensagem de informaçao indicando que o script Factory esta sendo executado.
   logger.log({ level: 'info', message: 'Executando script Factory.' });
   logger.log({ level: 'info', message: `Caminho do script: ${FAC_PATH}` });
   logger.log({ level: 'info', message: 'Iniciando processo...' });
 
   try {
-    // Inicia o processo Python com o script Factory como argumento.
     const pythonProcess = childProcess.spawn(PY_PATH, [FAC_PATH]);
-
-    // Registra uma mensagem de sucesso indicando que o processo Python foi iniciado.
     logger.log({ level: 'info', message: 'Processo Python iniciado com sucesso.' });
-
-    // Configura o listener para a saida padrao do processo Python.
     pythonProcess.stdout.on('data', (data) => {
       logger.log({ level: 'info', message: `Resposta do script Factory: ${data.toString()}` });
 
-      // Verifica a resposta do script e envia uma resposta apropriada para o processo renderer.
       if (data.toString().includes('error')) {
         logger.log({ level: 'error', message: 'Erro ao finalizar processo Factory.' });
         mainWindow.webContents.send('factory-response', 'failure');
@@ -395,94 +448,76 @@ ipcMain.on('run-factory', (event, args) => {
 
 // Configura um listener para o evento 'receive_commands' emitido do processo renderer.
 ipcMain.on('receive_commands', (event, { typemode, checkboxStates }) => {
-  // Cria um objeto com os dados recebidos do evento.
   const data = {
     typemode,
     checkboxStates
   };
   
-  // Registra uma mensagem de informaçao indicando que comandos estao sendo recebidos.
   logger.log({ level: 'info', message: 'Recebendo comandos.' });
-
-  // Define o caminho do arquivo onde os dados serao salvos.
   const filePath = path.join(__dirname, 'recipe.json');
-
-  // Escreve os dados no arquivo JSON especificado.
   fs.writeFile(filePath, JSON.stringify(data, null, 2), (err) => {
     if (err) {
-      // Registra uma mensagem de erro se ocorrer um problema ao salvar o arquivo JSON.
       logger.log({ level: 'error', message: `Erro ao salvar arquivo JSON: ${err}` });
       return;
     }
     
-    // Registra uma mensagem de sucesso indicando que o arquivo JSON foi salvo com sucesso.
     logger.log({ level: 'info', message: 'Arquivo JSON salvo com sucesso.' });
-    
-    // Registra uma mensagem de depuraçao com o conteúdo dos comandos recebidos.
     logger.log({ level: 'debug', message: `COMANDOS: ${JSON.stringify(data)}` });
-    
-    // Emite o evento 'run-factory' para iniciar o processo de Factory.
     ipcMain.emit('run-factory');
   });
 });
 
 // Ouvinte do evento 'read-config' do ipcMain
 ipcMain.on('read-config', () => {
-  // Le a configuraçao chamando a funçao readConfig com o argumento true
   const config = readConfig(true);
-  
-  // Registra a configuraçao lida no logger com nivel de debug
   logger.log({ level: 'debug', message: `Configuracoes: ${JSON.stringify(config)}` });
   
-  // Envia a configuraçao lida para o conteúdo da janela principal via IPC
   mainWindow.webContents.send('config-response', config);
 });
 
 // Ouvinte do evento 'write-config' do ipcMain
 ipcMain.on('write-config', (event, newConfig) => {
-  // Registra a nova configuraçao recebida no logger com nivel de debug
-  logger.log({ level: 'debug', message: `Nova configuracao: ${JSON.stringify(newConfig)}` });
-  
+  logger.log({ level: 'debug', message: `Nova configuração: ${JSON.stringify(newConfig)}` });
+
   try {
-    // Le o conteúdo do arquivo de configuraçao
     const configFileContent = fs.readFileSync(configPath, 'utf8');
-    // Converte o conteúdo do arquivo de configuraçao de JSON para objeto
     const config = JSON.parse(configFileContent);
-    
-    // Atualiza o objeto de configuraçao com os novos valores
+
     Object.keys(newConfig).forEach(key => {
       config[key] = newConfig[key];
     });
-    
-    // Converte o objeto de configuraçao atualizado de volta para JSON
+
     const updatedConfigContent = JSON.stringify(config, null, 2);
-    
-    // Escreve o conteúdo atualizado de volta no arquivo de configuraçao
-    fs.writeFileSync(configPath, updatedConfigContent);
-    // Registra no logger que o arquivo de configuraçao foi atualizado com sucesso
+
+    fs.writeFileSync(configPath, updatedConfigContent, 'utf8');
     logger.log({ level: 'info', message: 'Arquivo config foi atualizado com sucesso.' });
+
+    event.sender.send('write-config-response', 'success');
   } catch (error) {
-    // Registra no logger qualquer erro que ocorra durante a escrita do arquivo de configuraçao
-    logger.log({ level: 'error', message: `Erro escrevendo o arquivo de configuracao: ${error}` });
+    logger.log({ level: 'error', message: `Erro escrevendo o arquivo de configuração: ${error}` });
+    event.sender.send('write-config-response', 'failure');
   }
 });
 
-// Ouvinte do evento 'request-genotype' do ipcMain
-ipcMain.on('request-genotype', (event) => {
+// Ouvinte do evento 'request-naming' do ipcMain
+ipcMain.on('request-naming', (event) => {
   const config = readConfig(true);
-  event.sender.send('genotype-response', config.ENABLE_GENOTYPE);
+  event.sender.send('naming-response', {
+    enableNamingSeparation: config.ENABLE_NAMING_SEPARATION,
+    namingConvention: config.NAMING_CONVENTION
+  });
+    logger.log({ level: 'debug', message: `Separacao de nomes ativada: ${config.ENABLE_NAMING_SEPARATION}` });
+    logger.log({ level: 'debug', message: `Convencao de nomes: ${config.NAMING_CONVENTION}` });
 });
 
 // Ouvinte do evento 'request-phenotype' do ipcMain
 ipcMain.on('receive-custom', (event, customData) => {
   logger.log({ level: 'debug', message: 'Recebendo dados personalizados.' });
 
-  // Verifica se os dados personalizados foram fornecidos
   if (!customData) {
     logger.log({ level: 'error', message: 'Dados personalizados nao fornecidos.' });
     return;
 } 
-  // Registra os dados personalizados recebidos
   const customJson = JSON.stringify(customData, null, 2);
   logger.log({ level: 'info', message: `Dados personalizados: ${customJson}` });
   const customPath = path.join(__dirname, 'custom_preloading.json');
@@ -496,3 +531,79 @@ ipcMain.on('receive-custom', (event, customData) => {
   });
 });
 
+// Ouvidor do evento 'check-models-info' do ipcMain
+ipcMain.on('check-models-info', (event) => {
+  const modelsJsonPath = path.join(__dirname, 'models.json');
+
+  fs.readFile(modelsJsonPath, 'utf8', (err, data) => {
+      if (err) {
+          console.error(`Erro ao ler models.json: ${err}`);
+          event.sender.send('models-info-response', { error: 'Erro ao ler models.json' });
+          return;
+      }
+
+      try {
+          const models = JSON.parse(data);
+          event.sender.send('models-info-response', models);
+      } catch (parseErr) {
+          console.error(`Erro ao parsear JSON: ${parseErr}`);
+          event.sender.send('models-info-response', { error: 'Erro ao parsear models.json' });
+      }
+  });
+});
+
+// ouvinte do evento 'check-models' do ipcMain
+ipcMain.on('check-models', (event) => {
+  const MODELS_PATH = path.join(__dirname, 'models');
+  fs.readdir(MODELS_PATH, (err, files) => {
+    if (err) {
+      logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
+      event.sender.send('models-check-response', { error: 'Erro ao tentar ler o diretório de modelos' });
+      return;
+    }
+
+    const exeFiles = files.filter(file => file.endsWith('.exe'));
+    const invalidExecutables = [];
+
+    exeFiles.forEach((file, index) => {
+      const filePath = path.join(MODELS_PATH, file);
+
+      execFile(filePath, ['--info'], (error, stdout) => {
+        if (error || !stdout.includes('*')) {
+          invalidExecutables.push(file);
+        }
+
+        if (index === exeFiles.length - 1) {
+          if (invalidExecutables.length > 0) {
+            logger.log({ level: 'error', message: `Executaveis invalidos: ${invalidExecutables.join(', ')}` });
+            event.sender.send('models-check-response', { status: 'error', invalidExecutables });
+          } else {
+            logger.log({ level: 'info', message: 'Todos os executáveis sao validos.' });
+            event.sender.send('models-check-response', { status: 'good', message: 'Todos os executaveis sao validos.' });
+        }
+        }
+      });
+    });
+  });
+});
+
+// ouvinte do evento 'open-db-file-dialog' do ipcMain
+ipcMain.on('open-db-file-dialog', (event) => {
+  logger.log({ level: 'debug', message: 'open-db-file-dialog event received' });
+
+  dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [
+          { name: 'Databases', extensions: ['db'] }
+      ]
+  }).then(result => {
+      if (!result.canceled) {
+          logger.log({ level: 'debug', message: `File selected: ${result.filePaths[0]}` });
+          event.sender.send('selected-db-file', result.filePaths[0]);
+      } else {
+          logger.log({ level: 'debug', message: 'File selection canceled' });
+      }
+  }).catch(err => {
+      logger.log({ level: 'debug', message: `Error during file selection: ${err}` });
+  });
+});

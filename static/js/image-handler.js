@@ -1,4 +1,3 @@
-
 let currentImage = 0;
 
 /**
@@ -123,7 +122,9 @@ function nextImage() {
 */
 async function uploadImage() {
     const fileInput = document.getElementById('fileInput');
-    const {files} = fileInput;
+    console.log('fileInput:', fileInput);
+    const { files } = fileInput;
+    console.log('files:', files);
 
     if (files.length === 0) {
         console.error('Nenhuma imagem selecionada');
@@ -131,10 +132,24 @@ async function uploadImage() {
     }
 
     try {
-        const filePaths = Array.from(files).map(file => file.path);
+        // Usando webUtils.getPathForFile para obter o caminho do arquivo
+        const filePaths = await Promise.all(
+            Array.from(files).map(async (file) => {
+                console.log('file:', file);
+                const path = await webUtils.getPathForFile(file);
+                console.log('file path:', path);
+                return path || file.webkitRelativePath || file.name;
+            })
+        );
+
+        if (filePaths.length === 0) {
+            console.error('Nenhum caminho de arquivo encontrado');
+        } else if (filePaths.length > 1) {
+            console.warn('Enviando apenas a primeira imagem selecionada');
+        }
+        console.log('Enviando imagem para o servidor:', filePaths[0]);
         ipcRenderer.send('upload-image', filePaths);
-    }
-    catch (e) {
+    } catch (e) {
         console.error('Erro ao enviar imagem para o servidor:', e);
     }
 }
