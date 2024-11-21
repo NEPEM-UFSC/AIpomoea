@@ -13,7 +13,7 @@ if (process.env.debug) {
 } else DEBUG = false;
 
 const appVersion = app.getVersion();
-const microversion = "release candidate";
+const microversion = "";
 
 const childProcess = require('child_process');
 const { log, error } = require('node:console');
@@ -341,13 +341,12 @@ ipcMain.on('log-message', (event, level, message) => {
 
 // Configura um listener para o evento 'request-version' emitido do processo renderer.
 ipcMain.on('request-version', (event) => {
-  const version = `Versao: ${  appVersion  }-${  microversion}`;
+  const version = microversion ? `Versao: ${appVersion}-${microversion}` : `Versao: ${appVersion}`;
   event.sender.send('version-response', version);
-}),
+});
 
 // Configura um listener para o evento 'upload-image' emitido do processo renderer.
 ipcMain.on('upload-image', (event, filePaths) => {
-  // Registra uma mensagem de informaçao indicando que a imagem esta sendo recebida.
   logger.log({ level: 'info', message: 'Recebendo imagem.' });
   logger.log({ level: 'debug', message: `Caminhos dos arquivos: ${filePaths}` });
   if (filePaths.length === 0) {
