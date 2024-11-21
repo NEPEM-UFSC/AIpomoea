@@ -1,7 +1,7 @@
 {
   "name": "aipomoea",
   "productName": "AIpomoea",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "icon": "icone.ico",
   "description": "Tecnologia em Fenotipagem e Classificação",
   "main": "main.js",

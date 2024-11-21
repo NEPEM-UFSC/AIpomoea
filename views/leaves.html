@@ -88,16 +88,20 @@
                     <label for="leaves-color">Cor</label>
                 </div>
                 <div class="operation-item">
-                    <input type="checkbox" id="leaves-advanced-color">
-                    <label for="leaves-advanced-color">Cor Avançada</label>
-                </div>
-                <div class="operation-item">
                     <input type="checkbox" id="leaves-format-type">
                     <label for="leaves-format-type">Formato</label>
                 </div>
                 <div class="operation-item">
-                    <input type="checkbox" id="leaves-advanced-format">
-                    <label for="leaves-advanced-format">Formato Avançado</label>
+                    <input type="checkbox" id="leaves-pigmentation">
+                    <label for="leaves-pigmentation">Pigmentação</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="leaves-pcv">
+                    <label for="leaves-pcv">Valor de Complexidade do Perimetro</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="leaves-leaf-area">
+                    <label for="leaves-leaf-area">Área da Folha</label>
                 </div>
             </section>
             <section class="export-type">
@@ -158,8 +162,10 @@
 <script src="../static/js/send-commands.js"></script>
 <script src="../static/js/receive-response.js"></script> 
 <script src="../static/js/custom-loading.js"></script>
-</body>
+<script src="../static/js/commands-check.js"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', checkAndBlockOperations);
+
     var prevButton = document.getElementById('prevImageButton');
     var nextButton = document.getElementById('nextImageButton');
     var fileInput = document.getElementById('fileInput');
@@ -191,7 +197,6 @@
         }
 
         return false;
-        }
-
+    }
 </script>
 </html>

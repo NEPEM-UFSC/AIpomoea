@@ -170,6 +170,11 @@ body {
     color: white;
 }
 
+.operation-item input[type="checkbox"]:disabled + label {
+    background-color: #f0f0f0;
+    color: #ccc;
+    cursor: not-allowed;
+}
 
 .mode-dropdown {
     position: relative;
@@ -351,7 +356,7 @@ a:hover {
     bottom: 0;
     left: 0;
     margin: 10px;
-    font-size: 12px;
+    font-size: 14px;
     color: var(--dim-gray-color, gray);
     opacity: 0.75;
 }

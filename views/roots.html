@@ -92,6 +92,18 @@
                     <input type="checkbox" id="root-format">
                     <label for="root-format">Formato</label>
                 </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="root-size">
+                    <label for="root-size">Tamanho</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="root-damage">
+                    <label for="root-damage">Danos</label>
+                </div>
+                <div class="operation-item">
+                    <input type="checkbox" id="root-texture">
+                    <label for="root-texture">Textura</label>
+                </div>
             </section>
             <section class="export-type">
                 <h3 style="margin-right: 2700px;">Exportação</h3>
@@ -151,10 +163,13 @@
 <script src="../static/js/send-commands.js"></script> 
 <script src="../static/js/receive-response.js"></script>
 <script src="../static/js/custom-loading.js"></script>
+<script src="../static/js/commands-check.js"></script>
 <script>
-    var prevButton = document.getElementById('prevImageButton');
-    var nextButton = document.getElementById('nextImageButton');
-    var fileInput = document.getElementById('fileInput');
+document.addEventListener('DOMContentLoaded', checkAndBlockOperations);
+
+var prevButton = document.getElementById('prevImageButton');
+var nextButton = document.getElementById('nextImageButton');
+var fileInput = document.getElementById('fileInput');
 
     function setMode(modeName) {
         window.location.hash = modeName;
@@ -182,6 +197,6 @@
             fileInput.style.display = 'none';
         }
         return false;
-        }
+    }
 </script>
 </html>
