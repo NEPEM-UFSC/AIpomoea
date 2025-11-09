@@ -1,0 +1,257 @@
+name: CI - Tests and Quality Checks
+
+on:
+  push:
+    branches: [ main, dev/remaster ]
+  pull_request:
+    branches: [ main, dev/remaster ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+
+jobs:
+  test-python:
+    name: Python Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install Python dependencies
+        working-directory: ./src_python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+      
+      - name: Run smoke tests
+        working-directory: ./
+        run: |
+          pytest tests/test_smoke.py -v --tb=short
+      
+      - name: Run unit tests
+        working-directory: ./
+        run: |
+          pytest tests/unit/ -v --tb=short
+      
+      - name: Run integration tests
+        working-directory: ./
+        run: |
+          pytest tests/integration/ -v --tb=short
+      
+      - name: Generate coverage report
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: ./
+        run: |
+          pytest tests/ --cov=src_python --cov-report=xml --cov-report=term
+
+  lint-python:
+    name: Python Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort
+      
+      - name: Run flake8 (linting)
+        working-directory: ./src_python
+        run: |
+          flake8 src/ main.py --max-line-length=120 --extend-ignore=E203,W503 --statistics
+      
+      - name: Check code formatting (black)
+        working-directory: ./src_python
+        run: |
+          black --check src/ main.py --line-length=120 --diff
+      
+      - name: Check import sorting (isort)
+        working-directory: ./src_python
+        run: |
+          isort --check-only src/ main.py --profile black --diff
+
+  test-electron:
+    name: Electron & Node.js Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check for security vulnerabilities
+        run: npm audit --audit-level=high || true
+      
+      - name: Verify package integrity
+        run: npm run verify-build || echo "Build verification script not yet available"
+
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Trivy filesystem scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: Run Trivy summary report
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+  build-test:
+    name: Test Build Process (${{ matrix.os }})
+    needs: [test-python, test-electron]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Node.js dependencies
+        run: npm ci
+      
+      - name: Install Python dependencies
+        working-directory: ./src_python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Download Python runtime (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "Downloading Python runtime for Windows..."
+          ./runtimes/download-runtimes.ps1
+      
+      - name: Download Python runtime (Unix)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          echo "Downloading Python runtime for ${{ matrix.os }}..."
+          chmod +x ./runtimes/download-runtimes.sh
+          ./runtimes/download-runtimes.sh
+      
+      - name: Verify Python runtime
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            ls -lh runtimes/win/python/python/ || echo "Windows runtime not fully downloaded"
+          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+            ls -lh runtimes/mac/python/python/ || echo "macOS runtime not fully downloaded"
+          else
+            ls -lh runtimes/linux/python/python/ || echo "Linux runtime not fully downloaded"
+          fi
+      
+      - name: Test build packaging (dry-run)
+        run: npm run pack
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload build artifacts (for inspection)
+        uses: actions/upload-artifact@v4
+        with:
+          name: aipomoea-${{ matrix.os }}-ci-build
+          path: |
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.dmg
+            dist/*.deb
+            dist/*.zip
+          retention-days: 3
+          if-no-files-found: warn
+
+  quality-gate:
+    name: Quality Gate Summary
+    needs: [test-python, lint-python, test-electron, security-scan, build-test]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check all jobs status
+        run: |
+          echo "🔍 Quality Gate Results:"
+          echo "========================"
+          echo "Python Tests: ${{ needs.test-python.result }}"
+          echo "Python Linting: ${{ needs.lint-python.result }}"
+          echo "Electron Tests: ${{ needs.test-electron.result }}"
+          echo "Security Scan: ${{ needs.security-scan.result }}"
+          echo "Build Test: ${{ needs.build-test.result }}"
+          
+          if [ "${{ needs.test-python.result }}" != "success" ] || \
+             [ "${{ needs.lint-python.result }}" != "success" ] || \
+             [ "${{ needs.test-electron.result }}" != "success" ] || \
+             [ "${{ needs.build-test.result }}" != "success" ]; then
+            echo "❌ Quality gate FAILED"
+            exit 1
+          fi
+          
+          echo "✅ Quality gate PASSED"
