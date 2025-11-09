@@ -131,38 +131,56 @@ dist
 
 
 node_modules
-*.hintrc
 log/
 deprec/
 dist/
 python/
 recipe.json
-*.vscode/
 .vscode/
 results/
 uploads/
-models/
-tests/
+
+# Arquivos gerados/temporários Python
 *.pyc
-/__pycache__/
+*.pyo
+*.pyd
+__pycache__/
+**/__pycache__/
+
+# Logs
 *.log
 *.pid
 *.pid.lock
+benchmark.log
+
+# Dados/Config locais
+*.aipomoea
+config.json
+session.json
+custom_preloading.json
 *.sqlite3
 *.db
 *.db-journal
 *.db-shm
 *.db-wal
-*.pyc
-*.pyo
-*.pyd
-*.pyc
-*.aipomoea
-config.json
-custom_preloading.json
-.github/
-test/
-models.json
-static/views/layout/
-documentation/
-*.flake8
+
+# Runtimes Python (baixados localmente)
+runtimes/win/python/
+runtimes/mac/python/
+runtimes/linux/python/
+
+# Modelos ML (grandes, devem ser baixados separadamente)
+models/*
+
+# Artefatos de testes (NÃO os arquivos fonte de teste!)
+tests/temp_results/
+.pytest_cache/
+*.cover
+.coverage
+htmlcov/
+*.test.log
+.jest-cache/
+test-results/
+e2e-results/
+.flake8
+.hintrc
