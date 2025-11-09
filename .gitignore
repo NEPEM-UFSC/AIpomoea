@@ -185,3 +185,6 @@ e2e-results/
 .flake8
 .hintrc
 package-lock.json
+
+# Venv de testes local
+.venv-test/
