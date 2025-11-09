@@ -1,53 +1,114 @@
-const { contextBridge, ipcRenderer, webUtils } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
+const { webUtils } = require('electron');
 
-contextBridge.exposeInMainWorld('ipcRenderer', {
-    send: (channel, data) => ipcRenderer.send(channel, data),
-    on: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(event, ...args))
-});
+// Lista de canais IPC válidos para segurança
+const validChannels = [
+  'log-message',
+  'request-version',
+  'version-response',
+  'upload-image',
+  'upload-image-response',
+  'upload-images', // Novo handler
+  'run-factory',
+  'factory-response',
+  'receive_commands',
+  'execute-pipeline', // Novo handler
+  'python-message', // Novo canal de mensagens do Python
+  'read-config',
+  'config-response',
+  'write-config',
+  'write-config-response',
+  'request-naming',
+  'naming-response',
+  'receive-custom',
+  'check-models-info',
+  'models-info-response',
+  'open-db-file-dialog',
+  'selected-db-file'
+];
 
-contextBridge.exposeInMainWorld('webUtils', {
-    getPathForFile: async (file) => webUtils.getPathForFile(file)
-});
-
-contextBridge.exposeInMainWorld('electron', {
-    ipcRenderer: {
-/**
-        * Sends data to a specified channel if the channel is valid.
-        * @example
-        * sendIfValidChannel('open-db-file-dialog', { path: '/user/docs' })
-        * undefined
-        * @param {string} channel - The channel to which the data should be sent.
-        * @param {Object} data - The data to send through the channel.
-        * @returns {void} No return value.
-        * @description
-        *   - The function checks if the provided channel is within a predefined list of valid channels.
-        *   - If the channel is valid, it uses ipcRenderer to send the data.
-        *   - Valid channels ensure that data is sent only through secure, recognized pathways.
-        */
-        send: (channel, data) => {
-            const validChannels = ['open-db-file-dialog', 'read-config', 'write-config'];
-            if (validChannels.includes(channel)) {
-                ipcRenderer.send(channel, data);
-            }
-        },
-/**
-         * Sets up an event listener on a given channel if it's valid.
-         * @example
-         * (channel, func) => { ... }
-         * @param {string} channel - The channel name to listen to.
-         * @param {function} func - The callback function to execute when the event is triggered.
-         * @returns {void} No return value.
-         * @description
-         *   - Listens for specified IPC renderer channels.
-         *   - Executes the callback with the arguments passed from the event.
-         *   - Ensures the channel is among a predefined list of valid channels.
-         *   - Utilizes IPC communication within an Electron application context.
-         */
-        on: (channel, func) => {
-            const validChannels = ['selected-db-file', 'config-response', 'write-config-response'];
-            if (validChannels.includes(channel)) {
-                ipcRenderer.on(channel, (event, ...args) => func(...args));
-            }
-        }
+// Expor APIs seguras para o renderer
+contextBridge.exposeInMainWorld('electronAPI', {
+  // Comunicação IPC genérica
+  send: (channel, data) => {
+    if (validChannels.includes(channel)) {
+      ipcRenderer.send(channel, data);
     }
+  },
+  
+  // NOVO: Suporte para ipcRenderer.invoke (comunicação assíncrona)
+  invoke: (channel, data) => {
+    if (validChannels.includes(channel)) {
+      return ipcRenderer.invoke(channel, data);
+    }
+    return Promise.reject(new Error(`Canal inválido: ${channel}`));
+  },
+  
+  on: (channel, callback) => {
+    if (validChannels.includes(channel)) {
+      ipcRenderer.on(channel, callback);
+    }
+  },
+  
+  removeListener: (channel, callback) => {
+    if (validChannels.includes(channel)) {
+      ipcRenderer.removeListener(channel, callback);
+    }
+  },
+
+  // Funções específicas para facilitar o uso
+  logMessage: (level, message) => {
+    ipcRenderer.send('log-message', level, message);
+  },
+  
+  requestVersion: () => {
+    ipcRenderer.send('request-version');
+  },
+  
+  // LEGADO: Mantido para compatibilidade
+  uploadImages: (filePaths) => {
+    ipcRenderer.send('upload-image', filePaths);
+  },
+
+  // Utilitários do Electron
+  getPathForFile: (file) => {
+    return webUtils.getPathForFile(file);
+  }
 });
+
+// Para compatibilidade com código legado, expor ipcRenderer de forma controlada
+contextBridge.exposeInMainWorld('ipcRenderer', {
+  send: (channel, data) => {
+    if (validChannels.includes(channel)) {
+      ipcRenderer.send(channel, data);
+    }
+  },
+  
+  invoke: (channel, data) => {
+    if (validChannels.includes(channel)) {
+      return ipcRenderer.invoke(channel, data);
+    }
+    return Promise.reject(new Error(`Canal inválido: ${channel}`));
+  },
+  
+  on: (channel, callback) => {
+    if (validChannels.includes(channel)) {
+      ipcRenderer.on(channel, callback);
+    }
+  },
+  
+  removeListener: (channel, callback) => {
+    if (validChannels.includes(channel)) {
+      ipcRenderer.removeListener(channel, callback);
+    }
+  }
+});
+
+// Expor webUtils para manipulação de arquivos
+contextBridge.exposeInMainWorld('webUtils', {
+  getPathForFile: (file) => {
+    return webUtils.getPathForFile(file);
+  }
+});
+
+console.log('🔗 Preload script loaded successfully (Refactored for execute-pipeline)');
