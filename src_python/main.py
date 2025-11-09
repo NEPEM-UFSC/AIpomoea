@@ -63,7 +63,7 @@ def main():
             "results_count": len(all_results)
         })
         
-    except configuration.AppConfig as config_error:
+    except ValueError as config_error:
         communication.send_error(
             "CONFIG_ERROR",
             f"Configuration error: {config_error}",

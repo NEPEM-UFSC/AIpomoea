@@ -54,7 +54,7 @@ class AppConfig:
     
     def get_image_paths(self) -> Dict[str, str]:
         return {
-            filename: os.path.join(self.uploads_path, filename)
+            filename: os.path.join(self.uploads_path, filename).replace('\\', '/')
             for filename in self.files_to_process
         }
 

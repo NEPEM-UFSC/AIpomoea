@@ -81,10 +81,16 @@ def test_run_pipeline_parallel_fallback_to_sequential(mocker):
         def get_image_paths(self):
             return {"image1.jpg": "/path/image1.jpg"}
     
-    mocker.patch('src.execution.orchestrator._execute_parallel', side_effect=Exception("Parallel failed"))
+    # Mock Pool to raise exception during parallel execution
+    mock_pool = mocker.MagicMock()
+    mock_pool.__enter__ = mocker.MagicMock(side_effect=Exception("Parallel failed"))
+    mock_pool.__exit__ = mocker.MagicMock(return_value=False)
     
+    mocker.patch('src.execution.orchestrator.Pool', return_value=mock_pool)
+    
+    # Mock sequential execution to return expected result
     mock_sequential_result = [("image1", "root_color", "red")]
-    mocker.patch('src.execution.orchestrator._execute_sequential', return_value=mock_sequential_result)
+    mocker.patch('src.execution.runner.execute_single_command', return_value=mock_sequential_result)
     
     config = MockConfig()
     results = orchestrator.run_pipeline(config)
