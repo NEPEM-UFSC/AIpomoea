@@ -1,11 +1,22 @@
-# AIpomoea <img src=".github/icone.png" align="right" height="120/"/>
+# AIpomoea ![AIpomoea Icon](.github/icone.png)
 
 ![NEPEMVERSE](https://img.shields.io/endpoint?url=https://nepemufsc.com/.netlify/functions/verser?project=AIpomoea-stamp&label=LatestVersion:&labelColor=1278ce&logo=nepemverse&logoColor=white&style=plastic&color=#9e2626&cacheSeconds=3600)
 [![CI](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/main.yml/badge.svg)](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/main.yml)
+[![Build & Release](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/release.yml/badge.svg)](https://github.com/NEPEM-UFSC/AIpomoea/actions/workflows/release.yml)
 
 ## Tecnologia em Fenotipagem e Classificação
 
 Este projeto é uma iniciação tecnológica (PIBITI-CNPQ) que representa uma parceria inovadora entre o Núcleo de Estudos e Pesquisas em Experimentação e Melhoramento Vegetal (NEPEM-UFSC) e o Núcleo de Estudos em Olericultura de Santa Catarina (NEOSC-UFSC). O objetivo principal é estabelecer um protocolo avançado de fenotipagem de alto rendimento para a batata-doce (Ipomoea batatas L.).
+
+## 📥 Download
+
+Baixe a versão mais recente para seu sistema operacional:
+
+**[→ Acesse a página de Releases](https://github.com/NEPEM-UFSC/AIpomoea/releases/latest)**
+
+- 🪟 **Windows**: `AIpomoea-Setup-X.X.X.exe` (instalador) ou versão portátil
+- 🍎 **macOS**: `AIpomoea-X.X.X.dmg` (Intel e Apple Silicon)
+- 🐧 **Linux**: `AIpomoea-X.X.X.AppImage` ou `.deb` (Ubuntu/Debian)
 
 ## Visão geral do projeto
 
