@@ -111,6 +111,9 @@ if (fs.existsSync(PATHS.OLD_SESSION_FILE)) {
   logger.log({ level: 'info', message: 'Arquivo de sessao anterior nao encontrado.' });
   var firstSession = true;
   CreateSessionFile();
+  // Criar arquivo de marcação de primeira sessão concluída
+  fs.writeFileSync(PATHS.OLD_SESSION_FILE, JSON.stringify({ firstRun: Date.now() }, null, 2), 'utf8');
+  logger.log({ level: 'info', message: 'Marcador de primeira sessao criado.' });
 }
 
 app.commandLine.appendSwitch('allow-file-access-from-files');
