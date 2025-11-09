@@ -1,0 +1,21 @@
+_execute_command:
+
+    Detailed Steps:
+        1. If DEBUG is enabled, print the process name and the command being executed.
+        2. Retrieve the binary path and models path for the given command using `_get_binary_path`.
+        3. If the binary path is not found, return an error message.
+        4. Retrieve the list of image paths from `self.images`.
+        5. Initialize an empty list `results` to store the results.
+        6. Change the current directory to `models_path` using `self.change_directory`.
+        7. Process the images in batches defined by `self.batch_size`:
+            a. For each batch, if DEBUG is enabled, print the batch number and the images in the batch.
+            b. Execute the command on the batch using `_run_subprocess`.
+            c. Process the results using `_process_results` and extend the `results` list.
+            d. If an error occurs during batch processing, retry with smaller batches:
+                i. For each smaller batch, if DEBUG is enabled, print the retry batch number and the images in the batch.
+                ii. Execute the command on the smaller batch using `_run_subprocess`.
+                iii. Process the results using `_process_results` and extend the `results` list.
+                iv. If an error occurs during retry, append an error message to the `results` list.
+        8. If an outer exception occurs, catch it and return an error message.
+        9. Return the `results` list.
+

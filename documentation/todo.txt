@@ -1,0 +1,99 @@
+1. 📦 A "Caixa-Preta": Logging Persistente
+
+Sua arquitetura híbrida (Electron + Python) é uma "caixa-preta". Quando um pesquisador reportar que uma análise falhou, você não terá como saber o que aconteceu. O stdout que estamos implementando é para comunicação (progress, complete), não para diagnóstico.
+
+A Boa Prática: Implementar logging persistente em arquivo.
+
+    No Lado do Electron (main.js):
+
+        Ferramenta: Use electron-log. É o padrão da indústria. Ele automaticamente escreve logs em um local previsível na pasta de dados do usuário (%APPDATA%/AIpomoea/logs/main.log).
+
+        Ação: Substitua todos os seus console.log no main.js por log.info(), log.warn(), log.error(). Quando o Python falhar (o reject da nossa Promise), logue o erro completo ali.
+
+    No Lado do Python (factory.py):
+
+        Ferramenta: Use o módulo logging nativo do Python.
+
+        Ação: Na Spec 3 que discutimos, o main.js já passa o PATHS.LOGS_DIR para o Python. Configure seu factory.py para criar um logging.FileHandler que escreve em os.path.join(self.results_path, 'factory.log').
+
+        Benefício: Quando o subprocess.check_output de um .exe falhar, você vai logar o traceback completo no arquivo.
+
+Resultado: Quando o usuário reportar um bug, sua primeira resposta será: "Por favor, me envie o arquivo factory.log e main.log da sua pasta de dados." Você resolverá o problema em minutos, não em dias.
+
+2. 🛡️ Degradação Graciosa (Graceful Degradation)
+
+O que acontece se o usuário rodar uma análise em lote de 500 imagens e 10 modelos diferentes, e o root_color.exe falhar na imagem 250?
+
+    O Comportamento Ruim: O factory.py inteiro para, o stderr é pego pelo main.js, e o usuário perde 10 horas de processamento, recebendo apenas uma mensagem de erro genérica.
+
+    A Boa Prática: O sistema deve ser resiliente a falhas parciais. Um modelo falhar não deve parar todo o pipeline.
+
+Ação: No seu factory.py, dentro do seu _execute_command (ou similar), o try...except ao redor do subprocess.check_output não deve parar a execução.
+Python
+
+# tools/factory.py
+def _execute_command(self, command):
+    # ...
+    try:
+        # ... lógica do subprocess ...
+        result = subprocess.check_output(...)
+        return process_result(result)
+        
+    except Exception as e:
+        # NÃO DÊ 'raise' AQUI!
+        error_message = f"Falha ao executar o modelo '{command}': {e}"
+        
+        # 1. Logue o erro fatal no arquivo (Prática 1)
+        logging.error(f"FBIN2 - {error_message}\n{traceback.format_exc()}")
+        
+        # 2. Envie a mensagem de erro para a UI
+        send_message("error", {"code": "FBIN2", "message": error_message})
+        
+        # 3. Retorne um "resultado de falha"
+        return {"error": error_message}
+
+Resultado: O pipeline continua. No final, o ResultsExporter vai gerar o CSV/JSON, mas nas colunas do modelo root_color para aquela imagem, ele vai preencher com "ERROR" ou a mensagem de falha. O usuário recebe 99% do trabalho feito e uma notificação clara sobre o 1% que falhou.
+
+3. 📊 Telemetria Anônima e Opcional
+
+Isso é uma prática de Product Ownership. Como você sabe quais features são as mais usadas? Qual o tempo médio de processamento? Qual modelo .exe mais falha?
+
+    O Comportamento Ruim: Adivinhar o que o usuário quer e focar seu tempo de desenvolvimento na feature errada.
+
+    A Boa Prática: Coletar dados de uso anônimos para tomar decisões baseadas em dados.
+
+Ação:
+
+    Peça Permissão (Obrigatório): Na primeira vez que o app abrir, mostre um diálogo: "Para nos ajudar a priorizar novas features e corrigir bugs mais rápido, você gostaria de compartilhar dados de uso anônimos? (Ex: quais modelos foram executados, tempo de processamento, falhas). Nós nunca coletaremos seus dados ou imagens."
+
+    Salve a Resposta: Use electron-store para salvar a escolha (allowTelemetry: true/false).
+
+    Implemente: Se for true, envie eventos anônimos para um serviço simples (pode ser um Google Analytics 4 gratuito, PostHog, ou um endpoint seu).
+
+Exemplo de evento: { event: 'pipeline_executed', models: ['root_color', 'leaves_format'], image_count: 50, duration_sec: 120, status: 'success' }
+
+Resultado: Você descobrirá que 90% dos usuários usam root_color, mas só 5% usam leaves_format. Isso diz para você focar em otimizar o root_color e talvez descontinuar o leaves_format na 3.0.0.
+
+4. ⚙️ Configuração Pela Interface
+
+O seu config.json é uma ferramenta de desenvolvedor. Um pesquisador não deveria jamais ter que editar um arquivo JSON para mudar a pasta de resultados.
+
+    A Boa Prática: Todas as configurações comuns devem ser gerenciáveis por uma tela de "Configurações" (settings.html) dentro do aplicativo.
+
+    Ferramenta: Use electron-store. Ele substitui seu config.json por um armazenamento key-value persistente e seguro.
+
+    Ação:
+
+        Crie uma nova janela no Electron para as Configurações.
+
+        Nessa tela, crie campos para:
+
+            "Pasta de Destino dos Resultados" (com um botão ... que abre um seletor de diretório).
+
+            Um checkbox para "Habilitar Modo de Alto Desempenho" (o seu FORCE_MAXPERFORMANCE).
+
+            O checkbox para "Permitir Telemetria Anônima" (da Prática 3).
+
+        O main.js lê essas configurações do electron-store (em vez de readConfig()) e as passa para o Python via stdin em cada execução.
+
+Resultado: Seu aplicativo deixa de parecer um "amontoado de scripts" e passa a se comportar como um software profissional e polido.

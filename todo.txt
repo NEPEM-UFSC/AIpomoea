@@ -1,0 +1,314 @@
+Epic: Implementar Exclusão de Testes (Build Limpo)
+
+User Stories (Objetivos)
+
+    Como Desenvolvedor, eu quero que o processo de build (package ou make) exclua automaticamente todos os diretórios, arquivos e configurações de teste.
+
+    Como Desenvolvedor, eu quero ser capaz de rodar meus testes localmente (npm test) sem que esses arquivos sejam incluídos no build de produção.
+
+    Como Usuário Final, eu quero baixar um instalador com o menor tamanho possível, contendo apenas os arquivos necessários para a execução do AIpomoea.
+
+Technical Specifications (Passo a Passo)
+
+A exclusão de arquivos acontece em duas camadas: no seu sistema de controle de versão (.gitignore) e, de forma mais crítica, no seu empacotador (electron-builder ou electron-forge).
+
+Spec 1: Camada de Repositório (.gitignore)
+
+Tarefa: Garantir que artefatos gerados por testes nunca sejam enviados ao repositório.
+
+1.1. No arquivo .gitignore (na raiz): Adicione (ou verifique se existem) as seguintes entradas para ignorar os resultados e caches dos seus testes:
+Snippet de código
+
+# Ignorar caches e relatórios de Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+tests/__pycache__/
+
+# Ignorar resultados de testes E2E ou de integração
+tests/temp_results/
+
+# Ignorar caches de testes de JS (se aplicável)
+.jest-cache/
+
+# Ignorar logs de teste
+*.test.log
+
+Por quê: Isso mantém seu repositório limpo, mas não impede que os próprios arquivos de teste (como tests/unit/test_communication.py) sejam baixados e, eventualmente, empacotados. Para isso, precisamos da Camada 2.
+
+Spec 2: Camada de Empacotamento (A Solução Definitiva)
+
+Tarefa: Instruir o electron-forge ou electron-builder sobre exatamente quais arquivos incluir ou excluir no app.asar e no diretório resources/.
+
+A Abordagem Recomendada (Allow-List / Lista de Permissão):
+
+A melhor prática não é dizer ao empacotador o que excluir (blacklist), mas sim dizer a ele exclusivamente o que incluir (allow-list). Isso evita que arquivos aleatórios (como documentation/todo.txt ou notas.md) sejam acidentalmente empacotados.
+
+Vou usar a sintaxe do electron-builder aqui, pois sua configuração de files é mais explícita e poderosa para isso. (O electron-forge pode usar o electron-builder como provider).
+
+2.1. Em package.json (Configuração do electron-builder): Configure a chave build para incluir apenas os diretórios de produção:
+JSON
+
+{
+  "name": "aipomoea",
+  // ...
+  "scripts": {
+    "start": "electron-forge start",
+    "test:py": "pytest tests/",
+    "package": "electron-builder", // Mude para 'electron-builder'
+    "make": "electron-builder"
+  },
+  "build": {
+    "appId": "com.suauniversidade.aipomoea",
+    "productName": "AIpomoea",
+    
+    // --- ESTA É A ESPECIFICAÇÃO PRINCIPAL ---
+    "files": [
+      // 1. Inclua todo o código do Electron (main, preload, renderer)
+      "src_electron/**/*",
+      
+      // 2. Inclua o código-fonte Python de produção
+      "src_python/**/*",
+      
+      // 3. Inclua os runtimes Python standalone (da nossa Spec anterior)
+      "runtimes/**/*",
+      
+      // 4. Inclua o package.json (necessário para o Electron)
+      "package.json",
+      
+      // 5. Exclua explicitamente QUALQUER COISA de teste
+      // Mesmo dentro das pastas acima (ex: *.spec.js)
+      "!**/*.test.js",
+      "!**/*.spec.js",
+      "!**/*.test.py",
+      "!**/tests/",
+      "!**/test/"
+    ],
+    "extraResources": [
+      // Esta seção agora pode ser mais simples, pois 'files' já
+      // lida com 'runtimes' e 'src_python'. Mas se você 
+      // manteve a Spec anterior, ela estaria assim:
+      {
+        "from": "./src_python",
+        "to": "backend/src"
+      },
+      {
+        "from": "./runtimes/${platform}",
+        "to": "backend/runtime"
+      }
+    ],
+    // --- FIM DA ESPECIFICAÇÃO ---
+    
+    "asar": true // Mantenha o asar, ele é importante
+  }
+}
+
+2.2. Se você insistir em usar o electron-forge (Abordagem Blacklist): Se você não puder usar o electron-builder, você deve usar a propriedade ignore no packagerConfig do Forge. Nota: Isso é mais frágil!
+JSON
+
+{
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "asar": {
+          "unpackDir": "{runtimes,src_python}" // Seus runtimes/código NÃO podem estar no asar
+        },
+        // --- ESPECIFICAÇÃO DE EXCLUSÃO ---
+        "ignore": [
+          "^/tests$",                // Ignora a pasta 'tests' na raiz
+          "\\.test\\.js$",           // Ignora qualquer arquivo .test.js
+          "\\.spec\\.js$",           // Ignora qualquer arquivo .spec.js
+          "\\.test\\.py$",           // Ignora qualquer arquivo .test.py
+          "^/pytest.ini$",          // Ignora config do pytest
+          "^/\\.coveragerc$",       // Ignora config de coverage
+          "^/documentation$",       // Ignora sua pasta de documentação
+          "\\.md$"                  // Ignora todos os arquivos Markdown (exceto os que você lista)
+        ]
+      }
+      // ...
+    }
+  }
+}
+
+ Silas
+Gem personalizado
+
+Com certeza. Essa é uma prática-padrão de CI/CD (Continuous Integration / Continuous Deployment) e é crucial tanto para a segurança (não expor sua lógica de teste) quanto para a eficiência (reduzir o tamanho do instalador).
+
+Você está certo: testes são para o desenvolvedor, não para o usuário final.
+
+Aqui está a "Spec" detalhada para implementar uma "construção limpa" (clean build), garantindo que sua versão final seja enxuta e livre de qualquer artefato de teste.
+
+Epic: Implementar Exclusão de Testes (Build Limpo)
+
+User Stories (Objetivos)
+
+    Como Desenvolvedor, eu quero que o processo de build (package ou make) exclua automaticamente todos os diretórios, arquivos e configurações de teste.
+
+    Como Desenvolvedor, eu quero ser capaz de rodar meus testes localmente (npm test) sem que esses arquivos sejam incluídos no build de produção.
+
+    Como Usuário Final, eu quero baixar um instalador com o menor tamanho possível, contendo apenas os arquivos necessários para a execução do AIpomoea.
+
+Technical Specifications (Passo a Passo)
+
+A exclusão de arquivos acontece em duas camadas: no seu sistema de controle de versão (.gitignore) e, de forma mais crítica, no seu empacotador (electron-builder ou electron-forge).
+
+Spec 1: Camada de Repositório (.gitignore)
+
+Tarefa: Garantir que artefatos gerados por testes nunca sejam enviados ao repositório.
+
+1.1. No arquivo .gitignore (na raiz): Adicione (ou verifique se existem) as seguintes entradas para ignorar os resultados e caches dos seus testes:
+Snippet de código
+
+# Ignorar caches e relatórios de Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+tests/__pycache__/
+
+# Ignorar resultados de testes E2E ou de integração
+tests/temp_results/
+
+# Ignorar caches de testes de JS (se aplicável)
+.jest-cache/
+
+# Ignorar logs de teste
+*.test.log
+
+Por quê: Isso mantém seu repositório limpo, mas não impede que os próprios arquivos de teste (como tests/unit/test_communication.py) sejam baixados e, eventualmente, empacotados. Para isso, precisamos da Camada 2.
+
+Spec 2: Camada de Empacotamento (A Solução Definitiva)
+
+Tarefa: Instruir o electron-forge ou electron-builder sobre exatamente quais arquivos incluir ou excluir no app.asar e no diretório resources/.
+
+A Abordagem Recomendada (Allow-List / Lista de Permissão):
+
+A melhor prática não é dizer ao empacotador o que excluir (blacklist), mas sim dizer a ele exclusivamente o que incluir (allow-list). Isso evita que arquivos aleatórios (como documentation/todo.txt ou notas.md) sejam acidentalmente empacotados.
+
+Vou usar a sintaxe do electron-builder aqui, pois sua configuração de files é mais explícita e poderosa para isso. (O electron-forge pode usar o electron-builder como provider).
+
+2.1. Em package.json (Configuração do electron-builder): Configure a chave build para incluir apenas os diretórios de produção:
+JSON
+
+{
+  "name": "aipomoea",
+  // ...
+  "scripts": {
+    "start": "electron-forge start",
+    "test:py": "pytest tests/",
+    "package": "electron-builder", // Mude para 'electron-builder'
+    "make": "electron-builder"
+  },
+  "build": {
+    "appId": "com.suauniversidade.aipomoea",
+    "productName": "AIpomoea",
+    
+    // --- ESTA É A ESPECIFICAÇÃO PRINCIPAL ---
+    "files": [
+      // 1. Inclua todo o código do Electron (main, preload, renderer)
+      "src_electron/**/*",
+      
+      // 2. Inclua o código-fonte Python de produção
+      "src_python/**/*",
+      
+      // 3. Inclua os runtimes Python standalone (da nossa Spec anterior)
+      "runtimes/**/*",
+      
+      // 4. Inclua o package.json (necessário para o Electron)
+      "package.json",
+      
+      // 5. Exclua explicitamente QUALQUER COISA de teste
+      // Mesmo dentro das pastas acima (ex: *.spec.js)
+      "!**/*.test.js",
+      "!**/*.spec.js",
+      "!**/*.test.py",
+      "!**/tests/",
+      "!**/test/"
+    ],
+    "extraResources": [
+      // Esta seção agora pode ser mais simples, pois 'files' já
+      // lida com 'runtimes' e 'src_python'. Mas se você 
+      // manteve a Spec anterior, ela estaria assim:
+      {
+        "from": "./src_python",
+        "to": "backend/src"
+      },
+      {
+        "from": "./runtimes/${platform}",
+        "to": "backend/runtime"
+      }
+    ],
+    // --- FIM DA ESPECIFICAÇÃO ---
+    
+    "asar": true // Mantenha o asar, ele é importante
+  }
+}
+
+2.2. Se você insistir em usar o electron-forge (Abordagem Blacklist): Se você não puder usar o electron-builder, você deve usar a propriedade ignore no packagerConfig do Forge. Nota: Isso é mais frágil!
+JSON
+
+{
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "asar": {
+          "unpackDir": "{runtimes,src_python}" // Seus runtimes/código NÃO podem estar no asar
+        },
+        // --- ESPECIFICAÇÃO DE EXCLUSÃO ---
+        "ignore": [
+          "^/tests$",                // Ignora a pasta 'tests' na raiz
+          "\\.test\\.js$",           // Ignora qualquer arquivo .test.js
+          "\\.spec\\.js$",           // Ignora qualquer arquivo .spec.js
+          "\\.test\\.py$",           // Ignora qualquer arquivo .test.py
+          "^/pytest.ini$",          // Ignora config do pytest
+          "^/\\.coveragerc$",       // Ignora config de coverage
+          "^/documentation$",       // Ignora sua pasta de documentação
+          "\\.md$"                  // Ignora todos os arquivos Markdown (exceto os que você lista)
+        ]
+      }
+      // ...
+    }
+  }
+}
+
+Spec 3: Estrutura de Diretórios "Clean-Room"
+
+Tarefa: Manter uma estrutura de pastas que torne as regras da Spec 2 fáceis de aplicar.
+
+3.1. Estrutura de Repositório (Reforço): Mantenha a disciplina que você criou.
+
+/AIpomoea
+|
+|-- src_electron/       (Código de Produção JS/HTML/CSS)
+|   |-- main.js
+|   |-- preload.js
+|   |-- renderer/
+|   |   |-- main.js
+|   |   |-- main.spec.js   <-- ARQUIVO DE TESTE JS (será excluído)
+|
+|-- src_python/         (Código de Produção Python)
+|   |-- main.py
+|   |-- communication.py
+|   |-- ...
+|
+|-- tests/                (TUDO AQUI SERÁ EXCLUÍDO)
+|   |-- unit/
+|   |   |-- test_communication.py
+|   |-- e2e/
+|   |-- mock_data/
+|
+|-- runtimes/           (Runtimes Python, serão INCLUÍDOS)
+|
+|-- .gitignore          (Ignora caches de teste)
+|-- package.json        (Contém as regras de build)
+|-- pytest.ini          (Config de teste, será EXCLUÍDO)
+
+Resumo da Mentoria (O Veredito)
+
+Siga a Spec 2 (Abordagem Allow-List com electron-builder). É a mais segura.
+
+Ao definir a chave build.files no seu package.json, você cria um "portal" onde apenas os arquivos e pastas que você explicitamente lista (src_electron, src_python, runtimes, package.json) são permitidos no build final.
+
+Todo o resto — tests/, pytest.ini, .github/, documentation/ — é automaticamente deixado para trás.
+
+Isso garante que seu usuário final receba a versão mais limpa, leve e segura possível do AIpomoea.
