@@ -18,7 +18,7 @@ class PythonEnvManager {
 
         this.baseRuntimePath = isDev
             ? this.getDevRuntimePath()
-            : path.join(appRoot, 'backend', 'runtime', 'python', OS_PLATFORM === 'win32' ? 'python.exe' : 'bin/python');
+            : path.join(appRoot, 'backend', 'runtime', OS_PLATFORM === 'win32' ? 'python.exe' : 'bin/python');
 
         this.venvPath = path.join(app.getPath('userData'), VENV_DIR_NAME);
         
@@ -29,6 +29,13 @@ class PythonEnvManager {
         this.requirementsPath = path.join(this.srcPath, 'requirements.txt');
         
         this.lockFilePath = path.join(this.venvPath, '.setup-complete');
+        
+        // Log de debug dos caminhos configurados
+        logger.log({ level: 'debug', message: `PythonEnvManager - isDev: ${isDev}` });
+        logger.log({ level: 'debug', message: `PythonEnvManager - appRoot: ${appRoot}` });
+        logger.log({ level: 'debug', message: `PythonEnvManager - baseRuntimePath: ${this.baseRuntimePath}` });
+        logger.log({ level: 'debug', message: `PythonEnvManager - srcPath: ${this.srcPath}` });
+        logger.log({ level: 'debug', message: `PythonEnvManager - venvPath: ${this.venvPath}` });
     }
     
     getDevRuntimePath() {
@@ -74,14 +81,27 @@ class PythonEnvManager {
 
     _runCommand(executable, args) {
         return new Promise((resolve, reject) => {
+            logger.log({ level: 'debug', message: `Executando: ${executable} ${args.join(' ')}` });
+            
             const proc = childProcess.spawn(executable, args);
             
             proc.stdout.on('data', (data) => logger.log({ level: 'info', message: data.toString() }));
             proc.stderr.on('data', (data) => logger.log({ level: 'error', message: data.toString() }));
             
+            proc.on('error', (error) => {
+                logger.log({ level: 'error', message: `Erro ao spawn do processo: ${error.message}` });
+                logger.log({ level: 'error', message: `Erro detalhado: ${JSON.stringify(error)}` });
+                reject(error);
+            });
+            
             proc.on('close', (code) => {
-                if (code === 0) resolve();
-                else reject(new Error(`Processo falhou com código ${code}`));
+                if (code === 0) {
+                    logger.log({ level: 'debug', message: `Processo concluído com sucesso (code ${code})` });
+                    resolve();
+                } else {
+                    logger.log({ level: 'error', message: `Processo falhou com código ${code}` });
+                    reject(new Error(`Processo falhou com código ${code}`));
+                }
             });
         });
     }

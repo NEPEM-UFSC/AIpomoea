@@ -10,6 +10,9 @@
     "dev": "electron . --inspect=5858",
     "debug": "set DEBUG=true && electron . --inspect=5858",
     "test": "pwsh -ExecutionPolicy Bypass -File ./tests/run-tests.ps1",
+    "test:js": "jest tests/js/",
+    "test:js:watch": "jest tests/js/ --watch",
+    "test:js:coverage": "jest tests/js/ --coverage",
     "test:python": "pytest tests/ -v",
     "test:smoke": "pytest tests/test_smoke.py -v",
     "test:unit": "pytest tests/unit/ -v",
@@ -20,7 +23,9 @@
     "format": "npm run format:python",
     "format:python": "cd src_python && black src/ main.py && isort src/ main.py",
     "format:check": "cd src_python && black --check src/ main.py && isort --check-only src/ main.py",
+    "validate-runtimes": "pwsh -ExecutionPolicy Bypass -File ./scripts/validate-runtimes.ps1",
     "verify-build": "pwsh -ExecutionPolicy Bypass -File ./scripts/verify-build-contents.ps1",
+    "prebuild": "npm run validate-runtimes",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:win": "electron-builder --win",
@@ -61,8 +66,11 @@
     "npm": ">=8.0.0"
   },
   "devDependencies": {
+    "@types/jest": "30.0.0",
     "electron": "^33.0.0",
     "electron-builder": "^24.13.3",
+    "jest": "30.2.0",
+    "jest-environment-jsdom": "30.2.0",
     "rimraf": "^5.0.5"
   },
   "dependencies": {
@@ -112,7 +120,6 @@
       "!.gitattributes",
       "!todo.txt",
       "!*.log",
-      "!node_modules/",
       "!dist/",
       "!build/",
       "!.git/",
@@ -135,23 +142,30 @@
           "!.coverage",
           "!htmlcov/"
         ]
-      },
-      {
-        "from": "./runtimes/${platform}/python",
-        "to": "backend/runtime",
-        "filter": ["**/*"]
       }
     ],
     "extraFiles": [],
     "win": {
+      "extraResources": [
+        {
+          "from": "./runtimes/win/python",
+          "to": "backend/runtime",
+          "filter": ["**/*"]
+        }
+      ],
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "icone.ico",
@@ -160,14 +174,27 @@
       "verifyUpdateCodeSignature": false
     },
     "mac": {
+      "extraResources": [
+        {
+          "from": "./runtimes/mac/python",
+          "to": "backend/runtime",
+          "filter": ["**/*"]
+        }
+      ],
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "icone.icns",
@@ -196,14 +223,25 @@
       }
     },
     "linux": {
+      "extraResources": [
+        {
+          "from": "./runtimes/linux/python",
+          "to": "backend/runtime",
+          "filter": ["**/*"]
+        }
+      ],
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "icone.ico",

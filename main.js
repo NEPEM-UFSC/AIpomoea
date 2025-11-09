@@ -28,7 +28,11 @@ const PATHS = {
     RESULTS_DIR: path.join(USER_DATA_PATH, 'results'),
     LOGS_DIR: path.join(USER_DATA_PATH, 'logs'),
     SESSION_FILE: path.join(USER_DATA_PATH, 'session.json'),
-    CONFIG_FILE: path.join(USER_DATA_PATH, 'config.json')
+    CONFIG_FILE: path.join(USER_DATA_PATH, 'config.json'),
+    RECIPE_FILE: path.join(USER_DATA_PATH, 'recipe.json'),
+    CUSTOM_PRELOADING_FILE: path.join(USER_DATA_PATH, 'custom_preloading.json'),
+    MODELS_JSON_FILE: path.join(USER_DATA_PATH, 'models.json'),
+    OLD_SESSION_FILE: path.join(USER_DATA_PATH, 'session.aipomoea')
 };
 
 const configPath = PATHS.CONFIG_FILE;
@@ -99,7 +103,7 @@ loadModels();
 
 logger.log({ level: 'info', message: `AIpomoea - V: ${  appVersion  }-${  microversion}` });
 logger.log({ level: 'info', message: 'Executando...'})
-if (fs.existsSync(path.join(__dirname, 'session.aipomoea'))) {
+if (fs.existsSync(PATHS.OLD_SESSION_FILE)) {
   logger.log({ level: 'info', message: 'Arquivo de sessao anterior encontrado.' });
   var firstSession = false
   CreateSessionFile();
@@ -291,7 +295,7 @@ function createWindow () {
     resizable: true,
     width: 1100,
     height: 700,
-    icon: `${__dirname}/icone.ico`,
+    icon: path.join(__dirname, 'icone.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -362,9 +366,9 @@ app.on('window-all-closed', () => {
   logger.log({ level: 'info', message: 'Fechando janela principal.' });
 
   try {
-    const recipeFilePath = path.join(__dirname, 'recipe.json');
-    const customPreloadingFilePath = path.join(__dirname, 'custom_preloading.json');
-    const modelsJsonPath = path.join(__dirname, 'models.json');
+    const recipeFilePath = PATHS.RECIPE_FILE;
+    const customPreloadingFilePath = PATHS.CUSTOM_PRELOADING_FILE;
+    const modelsJsonPath = PATHS.MODELS_JSON_FILE;
 
   [recipeFilePath, customPreloadingFilePath, modelsJsonPath].forEach((filePath) => {
     if (fs.existsSync(filePath)) {
@@ -380,14 +384,14 @@ app.on('window-all-closed', () => {
     }
   });
 
-  fs.readdir(path.join(__dirname, 'uploads'), (err, files) => {
+  fs.readdir(PATHS.UPLOADS_DIR, (err, files) => {
     if (err) {
       logger.log({ level: 'error', message: `Erro ao ler o diretorio: ${err}` });
       return;
     }
 
     files.forEach((file) => {
-      const uploadFilePath = path.join(__dirname, 'uploads', file);
+      const uploadFilePath = path.join(PATHS.UPLOADS_DIR, file);
       if (fs.existsSync(uploadFilePath)) {
         fs.unlink(uploadFilePath, (err) => {
           if (err) {
@@ -417,14 +421,14 @@ app.quit();
  * @returns {void}
  */
 function removeUploadedFiles() {
-  fs.readdir(path.join(__dirname, 'uploads'), (err, files) => {
+  fs.readdir(PATHS.UPLOADS_DIR, (err, files) => {
     if (err) {
       logger.log({ level: 'error', message: `Erro ao ler o diretorio: ${err}` });
       return;
     }
 
     files.forEach((file) => {
-      const uploadFilePath = path.join(__dirname, 'uploads', file);
+      const uploadFilePath = path.join(PATHS.UPLOADS_DIR, file);
       if (fs.existsSync(uploadFilePath)) {
         fs.unlink(uploadFilePath, (err) => {
           if (err) {
@@ -506,7 +510,7 @@ ipcMain.on('upload-image', (event, filePaths) => {
       filePaths.forEach((originalPath) => {
         if (typeof originalPath === 'string') {
           const filename = path.basename(originalPath);
-          const savePath = path.join(__dirname, 'uploads', filename);
+          const savePath = path.join(PATHS.UPLOADS_DIR, filename);
   
           fs.copyFile(originalPath, savePath, (err) => {
             if (err) {
@@ -675,7 +679,7 @@ ipcMain.on('receive_commands', (event, { typemode, checkboxStates }) => {
   };
   
   logger.log({ level: 'info', message: 'Recebendo comandos.' });
-  const filePath = path.join(__dirname, 'recipe.json');
+  const filePath = PATHS.RECIPE_FILE;
   fs.writeFile(filePath, JSON.stringify(data, null, 2), (err) => {
     if (err) {
       logger.log({ level: 'error', message: `Erro ao salvar arquivo JSON: ${err}` });
@@ -741,7 +745,7 @@ ipcMain.on('receive-custom', (event, customData) => {
 } 
   const customJson = JSON.stringify(customData, null, 2);
   logger.log({ level: 'info', message: `Dados personalizados: ${customJson}` });
-  const customPath = path.join(__dirname, 'custom_preloading.json');
+  const customPath = PATHS.CUSTOM_PRELOADING_FILE;
 
   fs.writeFile(customPath, customJson, (err) => {
       if (err) {
@@ -754,7 +758,7 @@ ipcMain.on('receive-custom', (event, customData) => {
 
 // Ouvidor do evento 'check-models-info' do ipcMain
 ipcMain.on('check-models-info', (event) => {
-  const modelsJsonPath = path.join(__dirname, 'models.json');
+  const modelsJsonPath = PATHS.MODELS_JSON_FILE;
 
   fs.readFile(modelsJsonPath, 'utf8', (err, data) => {
       if (err) {
