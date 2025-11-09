@@ -3,25 +3,82 @@ const path = require('path')
 const fs = require('fs');
 const { execFile } = require('child_process');
 const { ipcMain } = require('electron');
-const logger = require('./tools/logger');
+const childProcess = require('child_process');
+const PythonEnvManager = require('./PythonEnvManager');
+const logger = require('./logger');
+
+// ============================================================================
+// SPEC 1 & 3: Configuração de Caminhos de Dados do Usuário
+// ============================================================================
+
+const isDev = !app.isPackaged;
+
+const backendRoot = isDev
+    ? path.join(__dirname)
+    : path.join(process.resourcesPath, 'app.asar.unpacked');
+
+const MODELS_PATH = path.join(backendRoot, 'models');
+
+const USER_DATA_PATH = app.getPath('userData');
+
+let envManager;
+
+const PATHS = {
+    UPLOADS_DIR: path.join(USER_DATA_PATH, 'uploads'),
+    RESULTS_DIR: path.join(USER_DATA_PATH, 'results'),
+    LOGS_DIR: path.join(USER_DATA_PATH, 'logs'),
+    SESSION_FILE: path.join(USER_DATA_PATH, 'session.json'),
+    CONFIG_FILE: path.join(USER_DATA_PATH, 'config.json')
+};
+
+const configPath = PATHS.CONFIG_FILE;
+const sessionPath = PATHS.SESSION_FILE;
+const uploadsPath = PATHS.UPLOADS_DIR;
+const modelsPath = MODELS_PATH;
+
+/**
+ * Garante que todos os diretórios de dados do usuário existam
+ */
+function ensureUserDataDirsExist() {
+  try {
+    fs.mkdirSync(PATHS.UPLOADS_DIR, { recursive: true });
+    fs.mkdirSync(PATHS.RESULTS_DIR, { recursive: true });
+    fs.mkdirSync(PATHS.LOGS_DIR, { recursive: true });
+    logger.log({ level: 'info', message: 'Diretórios de dados do usuário criados com sucesso.' });
+  } catch (error) {
+    logger.log({ level: 'error', message: `Erro ao criar diretórios de dados: ${error}` });
+    throw error;
+  }
+}
+
 logger.level = 'info';
 
-if (process.env.debug) {
-  DEBUG = true;
+// Corrigir verificação de debug - verificar múltiplas variáveis
+const DEBUG = process.env.DEBUG === 'true' || 
+              process.env.debug === 'true' || 
+              process.argv.includes('--debug') ||
+              process.argv.includes('--inspect');
+
+if (DEBUG) {
   logger.level = 'debug';
   logger.log({ level: 'debug', message: 'Modo de depuracao ativado.' });
-} else DEBUG = false;
+  console.log('🔧 Debug mode enabled');
+} else {
+  console.log('▶️ Starting AIpomoea in production mode');
+}
 
 const appVersion = app.getVersion();
 const microversion = "";
 
-const childProcess = require('child_process');
 const { log, error } = require('node:console');
 const { Logger } = require('winston');
-const configPath = path.join(__dirname, 'config.json');
 var firstSession = false;
 
 logger.log({ level: 'info', message: 'Iniciando app.' });
+
+// Garantir que os diretórios de dados do usuário existam
+ensureUserDataDirsExist();
+
 if (fs.existsSync(configPath)) {
   logger.log({ level: 'info', message: 'Dir de configuracao:', path: configPath });
 } else {
@@ -68,17 +125,23 @@ function CreateSessionFile() {
     session: Date.now(),
     version: `${appVersion}-${microversion}`
   };
-  const sessionPath = path.join(__dirname, 'session.aipomoea');
+  
+  // Garantir que o diretório userData existe
+  const userDataDir = path.dirname(sessionPath);
+  if (!fs.existsSync(userDataDir)) {
+    fs.mkdirSync(userDataDir, { recursive: true });
+  }
+  
   fs.writeFileSync(sessionPath, JSON.stringify(sessionData, null, 2), 'utf8');
   logger.log({ level: 'info', message: 'Arquivo de sessao criado com sucesso.' });
-  logger.log({ level: 'debug', message: `Dados da sessao: ${  JSON.stringify(sessionData)}` });
+  logger.log({ level: 'debug', message: `Dados da sessao: ${JSON.stringify(sessionData)}` });
 }
 /**
  * Creates a configuration file with default values.
  */
 function CreateConfig() {
   const defaultConfig = {
-    "OUTPUT_DIR": "",
+    "OUTPUT_DIR": PATHS.RESULTS_DIR,
     "OUTPUT_STANDART": "standart",
     "NAMING_CONVENTION": "Matrix-Gen-Rep",
     "ENABLE_NAMING_SEPARATION": true,
@@ -87,6 +150,13 @@ function CreateConfig() {
     "DB_PATH": "",
     "DB_NAME": "aipomoea"
   };
+  
+  // Garantir que o diretório userData existe
+  const userDataDir = path.dirname(configPath);
+  if (!fs.existsSync(userDataDir)) {
+    fs.mkdirSync(userDataDir, { recursive: true });
+  }
+  
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
   logger.log({ level: 'info', message: 'Arquivo de configuracao criado com valores padrao.' });  
 }
@@ -132,7 +202,6 @@ function readConfig(response=false) {
  */
 function loadModels() {
   logger.log({ level: 'info', message: 'realizando models_check "MODELSINFO" ' });
-  const MODELS_PATH = path.join(__dirname, 'models');
   const models = {
       root: [],
       leaves: [],
@@ -156,7 +225,7 @@ function loadModels() {
               }
           });
 
-          const modelsJsonPath = path.join(__dirname, 'models.json');
+          const modelsJsonPath = path.join(USER_DATA_PATH, 'models.json');
           fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
           logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
 
@@ -216,36 +285,73 @@ function loadModels() {
  */
 function createWindow () {
   logger.log({ level: 'info', message: 'Criando janela principal.' });
+  console.log('🪟 Creating main window...');
+  
   mainWindow = new BrowserWindow({
     resizable: true,
     width: 1100,
     height: 700,
-    icon: `${__dirname  }/icone.ico`,
+    icon: `${__dirname}/icone.ico`,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: true,
+      nodeIntegration: false,
+      contextIsolation: true,
       enableRemoteModule: false
     }
   })
   
   mainWindow.maximize();
   readConfig();
+  
   if (firstSession) {
-  mainWindow.loadFile('views/first_time.html')
-  }
-  else {
+    console.log('👋 First session detected, loading welcome screen');
+    mainWindow.loadFile('views/first_time.html')
+  } else {
+    console.log('🏠 Loading main interface');
     mainWindow.loadFile('views/index.html')
   }
+  
   logger.log({ level: 'info', message: 'Janela principal criada com sucesso.' });
   mainWindow.setMenuBarVisibility(false)
-  if (DEBUG){ mainWindow.webContents.openDevTools(); mainWindow.setMenuBarVisibility(true)}
+  
+  if (DEBUG) { 
+    console.log('🔍 Opening DevTools in debug mode');
+    mainWindow.webContents.openDevTools(); 
+    mainWindow.setMenuBarVisibility(true);
+  }
 
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  // Adicionar log quando a janela estiver pronta
+  mainWindow.webContents.once('did-finish-load', () => {
+    console.log('✅ Application window loaded successfully');
+    logger.log({ level: 'info', message: 'Interface carregada com sucesso.' });
+  });
+
+  // Adicionar tratamento de erros de carregamento
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('❌ Failed to load window:', errorDescription);
+    logger.log({ level: 'error', message: `Falha ao carregar janela: ${errorDescription}` });
+  });
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(async () => {
+  envManager = new PythonEnvManager();
+  const setupSuccess = await envManager.checkAndSetupVenv();
+  
+  if (!setupSuccess) {
+    dialog.showErrorBox(
+      'Erro Crítico',
+      'Falha ao configurar o ambiente Python. O aplicativo não pode continuar.'
+    );
+    app.quit();
+    return;
+  }
+  
+  createWindow();
+});
 
 app.on('activate', () => {
   logger.log({ level: 'info', message: 'Ativando janela principal.' });
@@ -345,10 +451,52 @@ ipcMain.on('request-version', (event) => {
   event.sender.send('version-response', version);
 });
 
-// Configura um listener para o evento 'upload-image' emitido do processo renderer.
+// ============================================================================
+// SPEC 4: Handler de Upload de Imagens (Refatorado)
+// ============================================================================
+ipcMain.handle('upload-images', async (event, filePaths) => {
+  logger.log({ level: 'info', message: 'Recebendo imagens.' });
+  logger.log({ level: 'debug', message: `Caminhos dos arquivos: ${filePaths}` });
+  
+  const copiedFiles = [];
+  
+  if (!Array.isArray(filePaths) || filePaths.length === 0) {
+    logger.log({ level: 'error', message: 'Nenhuma imagem selecionada.' });
+    throw new Error('Nenhum caminho de arquivo fornecido');
+  }
+  
+  try {
+    for (const originalPath of filePaths) {
+      if (typeof originalPath === 'string') {
+        const filename = path.basename(originalPath);
+        const savePath = path.join(PATHS.UPLOADS_DIR, filename);
+        
+        await fs.promises.copyFile(originalPath, savePath);
+        copiedFiles.push(filename);
+        
+        logger.log({ level: 'info', message: `Imagem salva com sucesso: ${savePath}` });
+      } else {
+        logger.log({ level: 'error', message: 'Caminho do arquivo inválido: não é uma string.' });
+      }
+    }
+    
+    return { success: true, files: copiedFiles };
+  } catch (error) {
+    logger.log({ level: 'error', message: `Erro ao fazer upload de imagens: ${error}` });
+    throw error;
+  }
+});
+
+// Handler legado mantido para compatibilidade (será removido após atualização do frontend)
 ipcMain.on('upload-image', (event, filePaths) => {
   logger.log({ level: 'info', message: 'Recebendo imagem.' });
   logger.log({ level: 'debug', message: `Caminhos dos arquivos: ${filePaths}` });
+  
+  const uploadDir = uploadsPath;
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  
   if (filePaths.length === 0) {
     logger.log({ level: 'error', message: 'Nenhuma imagem selecionada.' });
     throw new Error('Nenhum caminho passado');
@@ -384,17 +532,96 @@ ipcMain.on('upload-image', (event, filePaths) => {
   }
 });
 
-// Configura um listener para o evento 'run-factory' emitido do processo renderer.
-ipcMain.on('run-factory', (event, args) => {
-  const PY_PATH = path.join(__dirname, 'python', 'python.exe');
-  const FAC_PATH = path.join(__dirname, 'tools', 'factory.py');
+ipcMain.handle('execute-pipeline', async (event, { typemode, checkboxStates, uploadedFileNames }) => {
+  logger.log({ level: 'info', message: 'Executando pipeline...' });
+  
+  try {
+    const commandPayload = {
+      typemode: typemode,
+      commands: checkboxStates,
+      
+      config: readConfig(true),
+      
+      files_to_process: uploadedFileNames,
+      
+      paths: {
+        models_dir: MODELS_PATH,
+        uploads_dir: PATHS.UPLOADS_DIR,
+        results_dir: PATHS.RESULTS_DIR
+      }
+    };
+    
+    const commandString = JSON.stringify(commandPayload);
+    
+    logger.log({ level: 'debug', message: `Comando serializado: ${commandString}` });
+    
+    return new Promise((resolve, reject) => {
+      const pythonProcess = childProcess.spawn(envManager.venvPythonPath, [path.join(envManager.srcPath, 'main.py')]);
+      
+      let stdoutBuffer = '';
+      pythonProcess.stdout.on('data', (data) => {
+        stdoutBuffer += data.toString();
+        let boundary = stdoutBuffer.indexOf('\n');
+        
+        while (boundary !== -1) {
+          const jsonLine = stdoutBuffer.substring(0, boundary);
+          stdoutBuffer = stdoutBuffer.substring(boundary + 1);
+          
+          try {
+            const message = JSON.parse(jsonLine);
+            if (mainWindow && mainWindow.webContents) {
+              mainWindow.webContents.send('python-message', message);
+            }
+            logger.log({ level: 'debug', message: `Mensagem do Python: ${JSON.stringify(message)}` });
+          } catch (e) {
+            logger.log({ level: 'debug', message: `Linha não-JSON ignorada: ${jsonLine}` });
+          }
+          boundary = stdoutBuffer.indexOf('\n');
+        }
+      });
+      
+      let stderrBuffer = '';
+      pythonProcess.stderr.on('data', (data) => {
+        stderrBuffer += data.toString();
+        if (mainWindow && mainWindow.webContents) {
+          mainWindow.webContents.send('python-message', {
+            type: 'log',
+            level: 'error',
+            message: data.toString()
+          });
+        }
+        logger.log({ level: 'error', message: `Stderr do Python: ${data.toString()}` });
+      });
+      
+      pythonProcess.on('close', (code) => {
+        if (code === 0) {
+          logger.log({ level: 'info', message: 'Processo Python finalizado com sucesso.' });
+          resolve({ status: 'success' });
+        } else {
+          const errorMsg = `Python process exited with code ${code}. Stderr: ${stderrBuffer}`;
+          logger.log({ level: 'error', message: errorMsg });
+          reject(new Error(errorMsg));
+        }
+      });
+      
+      pythonProcess.stdin.write(commandString);
+      pythonProcess.stdin.end();
+      
+      logger.log({ level: 'info', message: 'Comando enviado para o processo Python.' });
+    });
+  } catch (error) {
+    logger.log({ level: 'error', message: `Erro ao executar pipeline: ${error}` });
+    throw error;
+  }
+});
 
+ipcMain.on('run-factory', (event, args) => {
   logger.log({ level: 'info', message: 'Executando script Factory.' });
-  logger.log({ level: 'info', message: `Caminho do script: ${FAC_PATH}` });
+  logger.log({ level: 'info', message: `Caminho do script: ${path.join(envManager.srcPath, 'main.py')}` });
   logger.log({ level: 'info', message: 'Iniciando processo...' });
 
   try {
-    const pythonProcess = childProcess.spawn(PY_PATH, [FAC_PATH]);
+    const pythonProcess = childProcess.spawn(envManager.venvPythonPath, [path.join(envManager.srcPath, 'main.py')]);
     logger.log({ level: 'info', message: 'Processo Python iniciado com sucesso.' });
     pythonProcess.stdout.on('data', (data) => {
       logger.log({ level: 'info', message: `Resposta do script Factory: ${data.toString()}` });
@@ -413,13 +640,11 @@ ipcMain.on('run-factory', (event, args) => {
       removeUploadedFiles();
     });
 
-    // Configura o listener para a saida de erro do processo Python.
     pythonProcess.stderr.on('data', (data) => {
       logger.log({ level: 'error', message: `Erro do script Factory: ${data.toString()}` });
       mainWindow.webContents.send('factory-response', 'failure');
     });
 
-    // Configura o listener para a saida do processo Python.
     pythonProcess.on('exit', (code) => {
       if (code !== 0) {
         logger.log({ level: 'error', message: `O processo Python encerrou com erro, codigo de saida ${code}` });
@@ -428,18 +653,15 @@ ipcMain.on('run-factory', (event, args) => {
       }
     });
 
-    // Configura o listener para o fechamento do processo Python.
     pythonProcess.on('close', (code) => {
       logger.log({ level: 'debug', message: `cls: O processo Python foi encerrado com codigo de saida ${code}` });
     });
 
-    // Configura o listener para erros ao iniciar o processo Python.
     pythonProcess.on('error', (error) => {
       logger.log({ level: 'error', message: `Falha ao iniciar o processo Python: ${error}` });
       mainWindow.webContents.send('factory-response', 'failure');
     });
   } catch (error) {
-    // Envia uma resposta de falha e registra uma mensagem de erro se uma exceçao ocorrer.
     mainWindow.webContents.send('factory-response', 'failure');
     logger.log({ level: 'error', message: `Erro ao iniciar o processo Python: ${error}` });
   }
@@ -536,7 +758,7 @@ ipcMain.on('check-models-info', (event) => {
 
   fs.readFile(modelsJsonPath, 'utf8', (err, data) => {
       if (err) {
-          console.error(`Erro ao ler models.json: ${err}`);
+          logger.log({ level: 'error', message: `Erro ao ler models.json: ${err}` });
           event.sender.send('models-info-response', { error: 'Erro ao ler models.json' });
           return;
       }
@@ -545,48 +767,12 @@ ipcMain.on('check-models-info', (event) => {
           const models = JSON.parse(data);
           event.sender.send('models-info-response', models);
       } catch (parseErr) {
-          console.error(`Erro ao parsear JSON: ${parseErr}`);
-          event.sender.send('models-info-response', { error: 'Erro ao parsear models.json' });
+          logger.log({ level: 'error', message: `Erro ao analisar models.json: ${parseErr}` });
+          event.sender.send('models-info-response', { error: 'Erro ao analisar models.json' });
       }
   });
 });
 
-// ouvinte do evento 'check-models' do ipcMain
-ipcMain.on('check-models', (event) => {
-  const MODELS_PATH = path.join(__dirname, 'models');
-  fs.readdir(MODELS_PATH, (err, files) => {
-    if (err) {
-      logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
-      event.sender.send('models-check-response', { error: 'Erro ao tentar ler o diretório de modelos' });
-      return;
-    }
-
-    const exeFiles = files.filter(file => file.endsWith('.exe'));
-    const invalidExecutables = [];
-
-    exeFiles.forEach((file, index) => {
-      const filePath = path.join(MODELS_PATH, file);
-
-      execFile(filePath, ['--info'], (error, stdout) => {
-        if (error || !stdout.includes('*')) {
-          invalidExecutables.push(file);
-        }
-
-        if (index === exeFiles.length - 1) {
-          if (invalidExecutables.length > 0) {
-            logger.log({ level: 'error', message: `Executaveis invalidos: ${invalidExecutables.join(', ')}` });
-            event.sender.send('models-check-response', { status: 'error', invalidExecutables });
-          } else {
-            logger.log({ level: 'info', message: 'Todos os executáveis sao validos.' });
-            event.sender.send('models-check-response', { status: 'good', message: 'Todos os executaveis sao validos.' });
-        }
-        }
-      });
-    });
-  });
-});
-
-// ouvinte do evento 'open-db-file-dialog' do ipcMain
 ipcMain.on('open-db-file-dialog', (event) => {
   logger.log({ level: 'debug', message: 'open-db-file-dialog event received' });
 
@@ -603,6 +789,17 @@ ipcMain.on('open-db-file-dialog', (event) => {
           logger.log({ level: 'debug', message: 'File selection canceled' });
       }
   }).catch(err => {
-      logger.log({ level: 'debug', message: `Error during file selection: ${err}` });
+      logger.log({ level: 'error', message: `Error during file selection: ${err}` });
   });
+});
+
+ipcMain.handle('update-python-packages', async () => {
+    logger.log({ level: 'info', message: 'Iniciando atualização de pacotes Python...' });
+    try {
+        const result = await envManager.updatePackages();
+        return result;
+    } catch (error) {
+        logger.log({ level: 'error', message: `Erro ao atualizar pacotes Python: ${error}` });
+        return { status: 'error', message: error.message };
+    }
 });
