@@ -1,0 +1,132 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0
+  workflow_dispatch:  # Permite executar manualmente
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            script: download-runtimes.ps1
+            build_cmd: npm run dist:win
+          - os: macos-latest
+            platform: mac
+            script: download-runtimes.sh
+            build_cmd: npm run dist:mac
+          - os: ubuntu-latest
+            platform: linux
+            script: download-runtimes.sh
+            build_cmd: npm run dist:linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.14'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Python (for testing)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r src_python/requirements.txt
+          pip install -r src_python/requirements-test.txt
+
+      - name: Run Python tests
+        run: |
+          cd tests
+          pytest test_smoke.py -v
+        shell: bash
+
+      - name: Download Python Runtime (Windows)
+        if: matrix.platform == 'win'
+        run: |
+          cd runtimes
+          .\${{ matrix.script }}
+        shell: pwsh
+
+      - name: Download Python Runtime (macOS/Linux)
+        if: matrix.platform != 'win'
+        run: |
+          cd runtimes
+          chmod +x ${{ matrix.script }}
+          ./${{ matrix.script }}
+        shell: bash
+
+      - name: Verify Runtime Installation
+        run: |
+          cd runtimes
+          if [ "${{ matrix.platform }}" = "win" ]; then
+            pwsh -c ".\verify-runtimes.ps1"
+          else
+            chmod +x verify-runtimes.sh
+            ./verify-runtimes.sh
+          fi
+        shell: bash
+
+      - name: Build Electron App
+        run: ${{ matrix.build_cmd }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIpomoea-${{ matrix.platform }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+          retention-days: 7
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Display structure
+        run: ls -R release-artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-artifacts/**/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
