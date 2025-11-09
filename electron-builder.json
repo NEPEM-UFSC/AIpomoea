@@ -1,0 +1,13 @@
+{
+  "extends": null,
+  "productName": "AIpomoea",
+  "appId": "com.nepem.aipomoea",
+  "asar": true,
+  "asarUnpack": [
+    "python/**/*",
+    "tools/**/*",
+    "models/**/*"
+  ],
+  "compression": "maximum",
+  "publish": null
+}
