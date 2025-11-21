@@ -13,11 +13,9 @@ const logger = require('./logger');
 
 const isDev = !app.isPackaged;
 
-const backendRoot = isDev
-    ? path.join(__dirname)
-    : path.join(process.resourcesPath, 'app.asar.unpacked');
-
-const MODELS_PATH = path.join(backendRoot, 'models');
+const MODELS_PATH = isDev
+    ? path.join(__dirname, 'models')
+    : path.join(process.resourcesPath, 'models');
 
 const USER_DATA_PATH = app.getPath('userData');
 
