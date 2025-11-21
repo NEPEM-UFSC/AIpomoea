@@ -68,7 +68,7 @@
   "devDependencies": {
     "@types/jest": "30.0.0",
     "electron": "^33.0.0",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "24.13.3",
     "jest": "30.2.0",
     "jest-environment-jsdom": "30.2.0",
     "rimraf": "^5.0.5"
@@ -81,9 +81,6 @@
     "productName": "AIpomoea",
     "copyright": "Copyright © 2025 NEPEM-UFSC",
     "asar": true,
-    "asarUnpack": [
-      "models/**/*"
-    ],
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -97,7 +94,6 @@
       "LICENSE.md",
       "views/**/*",
       "static/**/*",
-      "models/**/*",
       "!**/*.test.js",
       "!**/*.spec.js",
       "!**/*.test.py",
@@ -128,7 +124,14 @@
     ],
     "extraResources": [
       {
-        "from": "./src_python",
+        "from": "models",
+        "to": "models",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "src_python",
         "to": "backend/src",
         "filter": [
           "**/*",
@@ -148,9 +151,11 @@
     "win": {
       "extraResources": [
         {
-          "from": "./runtimes/win/python",
+          "from": "runtimes/win/python",
           "to": "backend/runtime",
-          "filter": ["**/*"]
+          "filter": [
+            "**/*"
+          ]
         }
       ],
       "target": [
@@ -176,9 +181,11 @@
     "mac": {
       "extraResources": [
         {
-          "from": "./runtimes/mac/python",
+          "from": "runtimes/mac/python",
           "to": "backend/runtime",
-          "filter": ["**/*"]
+          "filter": [
+            "**/*"
+          ]
         }
       ],
       "target": [
@@ -225,9 +232,11 @@
     "linux": {
       "extraResources": [
         {
-          "from": "./runtimes/linux/python",
+          "from": "runtimes/linux/python",
           "to": "backend/runtime",
-          "filter": ["**/*"]
+          "filter": [
+            "**/*"
+          ]
         }
       ],
       "target": [
