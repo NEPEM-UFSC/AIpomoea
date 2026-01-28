@@ -22,7 +22,7 @@
   "devDependencies": {
     "electron": "^33.0.0",
     "@electron/packager": "^18.3.3",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^26.6.0"
   },
   "dependencies": {
     "winston": "^3.13.1"
