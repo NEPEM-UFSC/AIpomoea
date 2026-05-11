@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,120 +8,275 @@
     <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
     <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
     <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap"
+        rel="stylesheet">
     <style>
-        .about {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
+        :root {
+            --font-main: 'Inter', sans-serif;
+            --font-title: 'Outfit', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .about-container {
+            max-width: 800px;
+            margin: 120px auto 60px;
+            padding: 0 40px;
+            text-align: left;
+        }
+
+        h1,
+        h2 {
+            font-family: var(--font-title);
+            color: var(--primary-purple);
+            text-align: center;
+            margin-top: 50px;
             margin-bottom: 20px;
         }
-        .about h1, .about h2, .about p {
-            margin: 10px 50px;
-            text-align: center;
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 40px;
         }
-        .badge-container {
+
+        h2 {
+            font-size: 28px;
+        }
+
+        p {
+            font-size: 17px;
+            color: #444;
+            margin-bottom: 20px;
+        }
+
+        .tech-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .tech-list li {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 10px;
+            font-size: 17px;
+            color: #444;
+        }
+
+        .tech-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--primary-purple);
+            font-weight: bold;
+        }
+
+        .dev-box {
+            text-align: center;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin: 30px 0;
+        }
+
+        .dev-names {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 20px;
+        }
+
+        .dev-names strong {
+            color: var(--primary-purple);
+        }
+
+        .badge-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
             justify-content: center;
-            padding: 20px;
+            padding: 20px 0;
         }
-        
-        .badge-container img {
-            height: 32px;
+
+        .badge-grid img {
+            height: 28px;
+            filter: grayscale(20%);
+            transition: filter 0.3s ease;
         }
-        
-        .contact-container {
+
+        .badge-grid img:hover {
+            filter: grayscale(0%);
+        }
+
+        /* Reusing Fluid Badges for Contact */
+        .contact-row {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
+            gap: 20px;
         }
-        
-        .contact-container a img {
+
+        .fluid-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none;
+            border: 1px solid #eee;
+        }
+
+        .fluid-badge svg {
+            width: 24px;
             height: 24px;
+            stroke-width: 2px;
         }
-        
-        .logo-container {
-            display: flex;
-            flex-direction: column;
-            place-items: center;
-            margin-top: 20px;
+
+        .fluid-badge:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+            border-color: var(--primary-purple-light);
         }
-        
-        .logos {
+
+        .github-badge svg {
+            color: #333;
+        }
+
+        .email-badge svg {
+            color: #2196f3;
+        }
+
+        .logo-footer {
+            margin-top: 80px;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
+            gap: 50px;
+            padding-top: 40px;
+            border-top: 1px solid #e9ecef;
         }
-        
-        .logos img {
-            height: 180px;
-            object-fit: contain
+
+        .logo-footer img {
+            height: 120px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .logo-footer img:hover {
+            opacity: 1;
         }
     </style>
 </head>
+
 <body>
     <header>
         <div class="top-container">
             <nav style="animation: slideDown 0.7s;">
                 <ul>
-                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
-                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
-                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
-                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
-                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio"
+                                style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config"
+                                style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda"
+                                style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar"
+                                style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre"
+                                style="filter: invert(100%);"><span>Sobre</span></a></li>
                 </ul>
             </nav>
     </header>
-    <section class="about">
-        <h1>Sobre</h1>
-        <p>
-            Este projeto, desenvolvido no âmbito de uma iniciação tecnológica (PIBITI-CNPQ), surge como uma parceria inovadora entre o Núcleo de Estudos e Pesquisas em Experimentação e Melhoramento Vegetal (NEPEM-UFSC) e o Núcleo de Estudos em Olericultura de Santa Catarina (NEOSC-UFSC). Ele visa revolucionar a fenotipagem da batata-doce (Ipomoea batatas L.) por meio de tecnologias avançadas e abordagens inovadoras, propondo um protocolo de alto rendimento que alia precisão, eficiência e acessibilidade.
-        </p>
-        <h2>Tecnologia empregada:</h2>
-        <p>
-            O projeto utiliza ferramentas de última geração, incluindo visão computacional, aprendizado de máquina e métodos analíticos sofisticados, permitindo uma análise automatizada, precisa e objetiva de características fenotípicas das plantas. Entre os objetivos estão a classificação e qualificação de aspectos cruciais como qualidade comercial, tamanho, formato, coloração, resistência a doenças e características biométricas. Além disso, o uso de tecnologias compactas e otimizadas assegura a operação em cenários locais, com armazenamento eficiente e autonomia on-premise.
-        </p>
-        <h2>Desenvolvedores:</h2>
-        <p style="text-align: center;">Este projeto foi desenvolvido por: Matheus L. Machado sob orientação de Tiago Olivoto.</p>
-        <div class="contact-container">
-            <a href="https://github.com/matheus-lopesm/" target="_blank" rel="noopener">
-                <img src="../static/images/badges/GITHUB.svg" alt="GitHub">
-            </a>
-            <a href="mailto:matheuslmachado03@gmail.com">
-                <img src="../static/images/badges/EMAIL.svg" alt="Email">
-            </a>
-        </div>
-        <h2 style="text-align: center;">Linguagens e Ferramentas Utilizadas:</h2>
-        <div class="badge-container">
-            <img src="../static/images/badges/PYTHON.svg" alt="Python">
-            <img src="../static/images/badges/ELECTRON.svg" alt="Electron">
-            <img src="../static/images/badges/HTML5.svg" alt="HTML5">
-            <img src="../static/images/badges/CSS3.svg" alt="CSS3">
-            <img src="../static/images/badges/JAVASCRIPT.svg" alt="JavaScript">
-            <img src="../static/images/badges/KERAS.svg" alt="Keras" >
-            <img src="../static/images/badges/TENSORFLOW.svg" alt="TensorFlow">
-            <img src="../static/images/badges/PANDAS.svg" alt="Pandas">
-            <img src="../static/images/badges/SQLITE.svg" alt="SQLite">
-        </div>
-        <div class="logo-container">
-            <p>Este projeto foi desenvolvido pelo Núcleo de Estudos e Pesquisas em Experimentação e Melhoramento Vegetal (NEPEM) da Universidade Federal de Santa Catarina.</p>
-            <div class="logos">
+    <div class="about-container">
+        <section class="about">
+            <h1>Sobre o Projeto</h1>
+            <p>
+                Este projeto, desenvolvido no âmbito de uma iniciação tecnológica (PIBITI-CNPQ), surge como uma parceria
+                inovadora entre o <strong>Núcleo de Estudos e Pesquisas em Experimentação e Melhoramento Vegetal
+                    (NEPEM-UFSC)</strong> e o <strong>Núcleo de Estudos em Olericultura de Santa Catarina
+                    (NEOSC-UFSC)</strong>.
+            </p>
+            <p>
+                Ele visa revolucionar a fenotipagem da batata-doce (<em>Ipomoea batatas L.</em>) por meio de tecnologias
+                avançadas e abordagens inovadoras, propondo um protocolo de alto rendimento que alia precisão,
+                eficiência e acessibilidade.
+            </p>
+
+            <h2>Tecnologia Empregada</h2>
+            <p>
+                O projeto utiliza ferramentas de última geração, integrando visão computacional e aprendizado de máquina
+                para garantir:
+            </p>
+            <ul class="tech-list">
+                <li>Análise automatizada, precisa e objetiva de características fenotípicas.</li>
+                <li>Classificação de qualidade comercial, formato, coloração e biometria.</li>
+                <li>Operação local (on-premise) com autonomia total e armazenamento eficiente.</li>
+                <li>Otimização para cenários de campo e laboratórios de pesquisa.</li>
+            </ul>
+
+            <h2>Desenvolvedores</h2>
+            <div class="dev-box">
+                <div class="dev-names">
+                    <strong>Matheus L. Machado</strong><br>
+                    <span>Sob orientação de <strong>Tiago Olivoto</strong></span>
+                </div>
+                <div class="contact-row">
+                    <a href="https://github.com/matheus-lopesm/" target="_blank" rel="noopener noreferrer"
+                        class="fluid-badge github-badge" title="GitHub">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+                            <path d="M9 18c-4.51 2-5-2-7-2" />
+                        </svg>
+                    </a>
+                    <a href="mailto:matheuslmachado03@gmail.com" class="fluid-badge email-badge" title="E-mail">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="20" height="16" x="2" y="4" rx="2" />
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <h2>Linguagens e Ferramentas</h2>
+            <div class="badge-grid">
+                <img src="../static/images/badges/PYTHON.svg" alt="Python">
+                <img src="../static/images/badges/ELECTRON.svg" alt="Electron">
+                <img src="../static/images/badges/HTML5.svg" alt="HTML5">
+                <img src="../static/images/badges/CSS3.svg" alt="CSS3">
+                <img src="../static/images/badges/JAVASCRIPT.svg" alt="JavaScript">
+                <img src="../static/images/badges/KERAS.svg" alt="Keras">
+                <img src="../static/images/badges/TENSORFLOW.svg" alt="TensorFlow">
+                <img src="../static/images/badges/PANDAS.svg" alt="Pandas">
+                <img src="../static/images/badges/SQLITE.svg" alt="SQLite">
+            </div>
+
+            <div class="logo-footer">
                 <a href="https://nepemufsc.com" target="_blank" rel="noopener">
                     <img src="../static/images/nepem-logo.svg" alt="NEPEM-UFSC">
                 </a>
+                <a href="https://ufsc.br" target="_blank" rel="noopener">
+                    <img src="../static/images/ufsc-logo.svg" alt="UFSC">
+                </a>
+            </div>
+        </section>
+    </div>
+    <footer class="app-version" id="app-version">
+        Versão:
+    </footer>
+</body>
+<script src="../static/js/version.js"></script>
 
-            <a href="https://ufsc.br" target="_blank" rel="noopener">
-                <img src="../static/images/ufsc-logo.svg" alt="UFSC">
-            </a>
-        </div>
-        </div>
-        <footer class="app-version" id="app-version">
-            Versão:
-        </footer>
-    </body>
-    <script src="../static/js/version.js"></script>
-    </html>
+</html>
