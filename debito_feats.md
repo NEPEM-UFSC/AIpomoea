@@ -2,29 +2,22 @@
 
 Este documento lista as funcionalidades de UI que atualmente utilizam placeholders e precisam de integração com o backend (Python/Electron) para funcionarem de forma dinâmica.
 
-## Tela Inicial (Home) - Painel de Status
+## Tela Inicial (Home) - Ensaios Recentes
 
-A seção de "Visão Geral / Status" na Home utiliza os seguintes placeholders que devem ser conectados ao banco de dados local ou ao estado do sistema:
+A seção de "Ensaios Recentes" substitui as métricas genéricas por um histórico de workspaces locais, focando na produtividade do pesquisador.
 
-### 1. Projetos Ativos
-- **Placeholder Atual:** `3`
-- **Descrição:** Deve mostrar a contagem de diretórios de projeto configurados ou acessados recentemente pelo usuário.
-- **Sugestão de Implementação:** Consultar a lista de projetos recentes no `localStorage` ou em um arquivo de configuração `config.json`.
+### 1. Lista de Diretórios Recentes
+- **Placeholders Atuais:** 3 caminhos de diretórios fictícios (D:\Pesquisas\..., C:\Users\..., E:\Backup\...).
+- **Descrição:** Deve mostrar os últimos 3 ou 4 diretórios que o usuário abriu para análise.
+- **Sugestão de Implementação:** 
+    - Ao abrir uma pasta nos módulos de Folhas ou Raízes, salvar o caminho absoluto e o timestamp em um array no `localStorage` ou em um arquivo `history.json` na pasta de dados do app (`app.getPath('userData')`).
+    - Na Home, ler este array, ordenar por data e exibir os primeiros itens.
+    - Clicar em um item deve levar o usuário diretamente para o módulo correspondente com aquela pasta já carregada.
 
-### 2. Total de Amostras Processadas
-- **Placeholder Atual:** `1.250`
-- **Descrição:** Tally acumulado de todas as amostras analisadas (Folhas + Raízes) em todos os projetos locais.
-- **Sugestão de Implementação:** Criar um contador persistente no banco de dados local (SQLite/Nedb) que é incrementado a cada pipeline finalizado com sucesso.
-
-### 3. Última Análise Realizada
-- **Placeholder Atual:** `10 minutos atrás`
-- **Descrição:** Timestamp relativo da última execução de qualquer um dos módulos de fenotipagem.
-- **Sugestão de Implementação:** Armazenar a data da última análise bem-sucedida e calcular a diferença de tempo no front-end.
-
-### 4. Status do Dispositivo de Captura
-- **Placeholder Atual:** `Conectado`
-- **Descrição:** Indica se o hardware de captura (câmera/sensor) está acessível pelo sistema.
-- **Sugestão de Implementação:** Criar um evento de "Heartbeat" entre o processo principal do Electron e o hardware para atualizar o estado na UI.
+### 2. Data de Última Modificação
+- **Placeholder Atual:** Datas fixas (10/05/2024, etc).
+- **Descrição:** Exibir quando aquele ensaio/pasta foi acessado ou processado pela última vez.
+- **Sugestão de Implementação:** Capturar o `Date.now()` no momento da abertura ou do processamento final do pipeline e formatar como string legível.
 
 ---
 *Documento gerado para orientação do time de Backend.*
