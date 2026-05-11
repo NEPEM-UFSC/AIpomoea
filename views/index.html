@@ -195,8 +195,15 @@
         }
 
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .recent-ensaios {
@@ -234,12 +241,13 @@
             border-color: var(--primary-purple-light);
             background: #fdfdfd;
             transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
         }
 
         .folder-icon {
             font-size: 24px;
-            color: #ffca28; /* Classic folder yellow */
+            color: #ffca28;
+            /* Classic folder yellow */
         }
 
         .ensaio-info {
@@ -306,7 +314,7 @@
 
         <div class="recent-ensaios">
             <h3>Ensaios Recentes</h3>
-            
+
             <a href="#" class="ensaio-item">
                 <div class="folder-icon">📁</div>
                 <div class="ensaio-info">

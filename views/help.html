@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,112 +8,251 @@
     <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
     <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
     <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap"
+        rel="stylesheet">
     <style>
-        .help {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 5px;
+        :root {
+            --font-main: 'Inter', sans-serif;
+            --font-title: 'Outfit', sans-serif;
         }
-        .faq {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 5px;
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #333;
+            line-height: 1.6;
         }
-        .documentation {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 5px;
+
+        section {
+            max-width: 800px;
+            margin: 0 auto 60px;
+            padding: 0 20px;
         }
-        .contact {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 5px;
+
+        h2 {
+            font-family: var(--font-title);
+            font-size: 32px;
+            color: var(--primary-purple);
+            text-align: center;
+            margin-bottom: 20px;
         }
-        .help-header, .faq-header, .documentation-header, .contact-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
+
+        .help-header {
+            text-align: center;
+            margin-top: 120px;
+            margin-bottom: 50px;
         }
+
+        .help-header p {
+            font-size: 18px;
+            color: var(--text-muted);
+        }
+
+        /* FAQ Accordion Styles */
+        .faq-container {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 10px 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
         .faq-item {
-            font-size: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+
+        .faq-item summary {
+            list-style: none;
+            padding: 20px 0;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--primary-purple);
+            font-size: 18px;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            gap: 5px;
-            padding: 10px;
-            border: 1px solid #000000;
-            border-radius: 10px;
-            width: 75vw;
-            max-height: 275px;
+            outline: none;
+        }
+
+        .faq-item summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .faq-item summary::after {
+            content: '+';
+            font-size: 24px;
+            color: var(--text-muted);
+            transition: transform 0.3s ease;
+        }
+
+        .faq-item[open] summary::after {
+            content: '−';
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            padding: 0 0 20px 0;
+            color: #444;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        /* Documentation & Contact */
+        .documentation,
+        .contact {
             text-align: center;
         }
-        .faq-item h3 {
-            font-size: 21px;
+
+        .documentation-header p,
+        .contact-header p {
+            margin-bottom: 30px;
+            color: var(--text-muted);
         }
-        .faq-item p {
-            font-size: 16px;
-            color: #3b3b3b;
+
+        .badge-container,
+        .contact-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .fluid-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: #ffffff;
+            border-radius: 22px;
+            /* Rounded and fluid */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none;
+            border: 1px solid #eee;
+        }
+
+        .fluid-badge svg {
+            width: 32px;
+            height: 32px;
+            stroke-width: 2.5px;
+            transition: all 0.3s ease;
+        }
+
+        .fluid-badge:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-purple-light);
+            background: #fff;
+        }
+
+        .fluid-badge:hover svg {
+            transform: scale(1.1);
+        }
+
+        .pdf-badge {
+            border-color: #ffcdd2;
+        }
+
+        .pdf-badge:hover {
+            border-color: #f44336;
+        }
+
+        .pdf-badge svg {
+            color: #f44336;
+        }
+
+        .github-badge svg {
+            color: #333;
+        }
+
+        .email-badge svg {
+            color: #2196f3;
         }
     </style>
 </head>
+
 <body>
     <header>
         <div class="top-container">
             <nav style="animation: slideDown 0.7s;">
                 <ul>
-                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
-                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
-                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
-                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
-                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio"
+                                style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config"
+                                style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda"
+                                style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar"
+                                style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre"
+                                style="filter: invert(100%);"><span>Sobre</span></a></li>
                 </ul>
             </nav>
     </header>
-    <section class="help">
-        <div class="help-header">
-            <h2>Ajuda</h2>
-            <p>Encontre aqui algumas informações úteis sobre o aplicativo, guia de uso e contato.</p>
-        </div>
+    <section class="help-header">
+        <h2>Ajuda</h2>
+        <p>Encontre aqui informações úteis, guia de uso e canais de suporte.</p>
     </section>
+
     <section class="faq">
-        <div class="faq-header">
-            <h2>Perguntas frequentes</h2>
-            <div class="faq-item">
-                <h3>Como deve ser a nomeação dos arquivos?</h3>
-                <p>Para utilizar as ferramentas de convenção de nomeação, os nomes dos arquivos das imagens devem possuir alguma das estruturas, dividido por "-" ou "_".</p>
-            </div>
-            <div class="faq-item">
-                <h3>Onde encontro o guia e a documentação completa?</h3>
-                <p>O guia pode ser encontrado na seção abaixo, a documentação está disponível no repositório do aplicativo no github;</p>
-            </div>
-            <div class="faq-item">
-                <h3>Como reporto um problema?</h3>
-                <p>Para reportar um problema, abra uma issue no repositório do GitHub ou entre em contato através do email fornecido na seção de Contato.</p>
-            </div>
-            <div class="faq-item">
-                <h3>Como faço para atualizar o aplicativo?</h3>
-                <p>Para atualizar o aplicativo, acesse a seção de Atualizar no menu superior e siga as instruções, caso seu aplicativo se encontrar desatualizado.</p>
-            </div>
-            <div class="faq-item">
-                <h3>Como faço para alterar as configurações?</h3>
-                <p>Para alterar as configurações, acesse a seção de Configurações no menu superior e siga as instruções.</p>
-            </div>
-            <div class="faq-item">
-                <h3>Como faço para utilizar o aplicativo?</h3>
-                <p>Para utilizar o aplicativo, acesse a seção de Início no menu superior, selecione qual parte da planta deseja analisar, adicione as imagens e os comandos que deseja processar e o formato de saída desejável, para mais informações consulte o guia de uso.</p>
-            </div>
-            <div class="faq-item">
-                <h3>O que é o modo de máxima performance?</h3>
-                <p>Este modo força o uso de processamentos paralelos e de multiplos núcleos do CPU, levando a consideraveis ganhos de performance, porém com grande custo de recursos, essa opção pode afetar a estabilidade do aplicativo em alguns computadores, não é recomendável seu uso em máquinas fracas, para maiores informações consulte o guia de uso.</p>
-            </div>
+        <h2>Perguntas Frequentes</h2>
+        <div class="faq-container">
+            <details class="faq-item">
+                <summary>Como deve ser a nomeação dos arquivos?</summary>
+                <div class="faq-answer">
+                    <p>Para utilizar as ferramentas de convenção de nomeação, os nomes dos arquivos das imagens devem
+                        possuir alguma das estruturas padronizadas, divididas por "-" ou "_".</p>
+                </div>
+            </details>
+
+            <details class="faq-item">
+                <summary>Onde encontro o guia e a documentação completa?</summary>
+                <div class="faq-answer">
+                    <p>O guia de uso pode ser baixado na seção abaixo. A documentação técnica completa está disponível
+                        no nosso repositório oficial no GitHub.</p>
+                </div>
+            </details>
+
+            <details class="faq-item">
+                <summary>Como reporto um problema?</summary>
+                <div class="faq-answer">
+                    <p>Para reportar bugs ou sugestões, você pode abrir uma "Issue" no GitHub ou enviar um e-mail
+                        diretamente para o suporte técnico listado no fim desta página.</p>
+                </div>
+            </details>
+
+            <details class="faq-item">
+                <summary>Como faço para atualizar o aplicativo?</summary>
+                <div class="faq-answer">
+                    <p>Acesse a seção de <strong>Atualizar</strong> no menu superior. O sistema verificará
+                        automaticamente se existe uma versão mais recente disponível para download.</p>
+                </div>
+            </details>
+
+            <details class="faq-item">
+                <summary>O que é o modo de máxima performance?</summary>
+                <div class="faq-answer">
+                    <p>Este modo habilita o processamento paralelo em múltiplos núcleos da CPU. Isso acelera
+                        consideravelmente as análises, mas consome mais recursos do computador. Não é recomendado para
+                        máquinas com hardware limitado.</p>
+                </div>
+            </details>
+
+            <details class="faq-item">
+                <summary>Como faço para utilizar o aplicativo?</summary>
+                <div class="faq-answer">
+                    <p>Acesse a <strong>Home</strong>, selecione o módulo desejado (Folhas ou Raízes), selecione a pasta
+                        com as imagens e escolha o pipeline de processamento. Os resultados serão gerados na mesma pasta
+                        de origem.</p>
+                </div>
+            </details>
+        </div>
     </section>
     <section class="documentation">
         <div class="documentation-header">
@@ -120,27 +260,47 @@
             <p>Para informações mais detalhadas, consulte este guia de uso.</p>
         </div>
         <div class="badge-container">
-            <a href="../documentation/Guia de uso - AIpomoea.pdf" target="_blank">
-                <img src="../static/images/badges/PDF.svg" alt="PDF" >
+            <a href="../documentation/Guia de uso - AIpomoea.pdf" target="_blank" rel="noopener noreferrer"
+                class="fluid-badge pdf-badge" title="Abrir Guia de Uso">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <path d="M9 13h6" />
+                    <path d="M9 17h3" />
+                </svg>
             </a>
         </div>
     </section>
+
     <section class="contact">
         <div class="contact-header">
             <h2>Contato</h2>
             <p>Entre em contato para informações não encontradas ou outras dúvidas.</p>
         </div>
         <div class="contact-container">
-            <a href="https://github.com/matheus-lopesm/" target="_blank" rel="noopener">
-                <img src="../static/images/badges/GITHUB.svg" alt="GitHub">
+            <a href="https://github.com/matheus-lopesm/" target="_blank" rel="noopener noreferrer"
+                class="fluid-badge github-badge" title="Ver GitHub">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+                    <path d="M9 18c-4.51 2-5-2-7-2" />
+                </svg>
             </a>
-            <a href="mailto:matheuslmachado03@gmail.com">
-                <img src="../static/images/badges/EMAIL.svg" alt="Email">
+            <a href="mailto:matheuslmachado03@gmail.com" class="fluid-badge email-badge" title="Enviar E-mail">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                </svg>
             </a>
+        </div>
     </section>
     <footer class="app-version" id="app-version">
         Versão:
     </footer>
 </body>
 <script src="../static/js/version.js"></script>
+
 </html>
