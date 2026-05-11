@@ -31,7 +31,8 @@ const validChannels = [
   'finalize-ingestion',
   'get-project-samples',
   'start-processing',
-  'atualizacao-progresso'
+  'atualizacao-progresso',
+  'export-project'
 ];
 
 // Expor APIs seguras para o renderer

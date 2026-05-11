@@ -442,12 +442,15 @@
                     idProjeto: parseInt(idProjeto),
                     amostrasIds: idsParaProcessar
                 });
-
+                
                 labelStatus.textContent = 'Processamento Concluído!';
                 setTimeout(() => {
-                    progressoUI.style.display = 'none';
-                    carregarAmostras(); // Recarrega tudo para atualizar dados finais
-                }, 2000);
+                    const params = new URLSearchParams({
+                        id: idProjeto,
+                        nome: nomeProjeto
+                    });
+                    window.location.href = `project_summary.html?${params.toString()}`;
+                }, 1500);
 
             } catch (err) {
                 console.error("Erro no processamento IA:", err);

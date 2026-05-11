@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Relatório Final</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-main: 'Inter', sans-serif;
+            --font-title: 'Outfit', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .summary-card {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            border-radius: 32px;
+            padding: 50px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            text-align: center;
+            animation: zoomIn 0.5s ease-out;
+        }
+
+        .header-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+
+        h2 {
+            font-family: var(--font-title);
+            font-size: 32px;
+            color: var(--primary-purple);
+            margin: 0 0 10px 0;
+        }
+
+        .project-name {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 40px;
+            font-weight: 600;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 50px;
+        }
+
+        .metric-item {
+            background: #fdfbff;
+            border: 1px solid #eee;
+            padding: 25px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .metric-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-purple-light);
+        }
+
+        .metric-value {
+            display: block;
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--primary-purple);
+            margin-bottom: 5px;
+            font-family: var(--font-title);
+        }
+
+        .metric-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #999;
+            letter-spacing: 1px;
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-export {
+            background: var(--primary-purple);
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(111, 66, 193, 0.3);
+            transition: all 0.3s;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .btn-export:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 35px rgba(111, 66, 193, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-home {
+            background: transparent;
+            color: #666;
+            border: 1.5px solid #ddd;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-home:hover {
+            background: #f8f9fa;
+            border-color: #999;
+        }
+
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+    </style>
+</head>
+<body>
+    <div class="summary-card">
+        <div class="header-icon">🏆</div>
+        <h2>Análise Concluída!</h2>
+        <div class="project-name" id="nomeProjeto">...</div>
+
+        <div class="metrics-grid">
+            <div class="metric-item">
+                <span class="metric-value" id="valTotal">0</span>
+                <span class="metric-label">Amostras</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-value" id="valDimensoes">0</span>
+                <span class="metric-label">Variáveis</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-value">100%</span>
+                <span class="metric-label">Concluído</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="btnExport" class="btn-export">Exportar Planilha (CSV)</button>
+            <button class="btn-home" onclick="window.location.href='index.html'">Voltar para a Home</button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const idProjeto = urlParams.get('id');
+        const nomeProjeto = urlParams.get('nome');
+        
+        document.getElementById('nomeProjeto').textContent = `Projeto: ${nomeProjeto || '...'} `;
+
+        async function carregarStats() {
+            try {
+                const amostras = await window.electronAPI.invoke('get-project-samples', parseInt(idProjeto));
+                const processadas = amostras.filter(a => a.resultados_json !== null);
+                
+                document.getElementById('valTotal').textContent = processadas.length;
+                
+                // Dimensões
+                if (amostras.length > 0) {
+                    const meta = JSON.parse(amostras[0].metadados_json || '{}');
+                    document.getElementById('valDimensoes').textContent = Object.keys(meta).length;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('btnExport').onclick = async () => {
+            const btn = document.getElementById('btnExport');
+            const originalText = btn.textContent;
+            btn.textContent = 'Gerando Arquivo...';
+            btn.disabled = true;
+
+            try {
+                const result = await window.electronAPI.invoke('export-project', parseInt(idProjeto));
+                if (result.success) {
+                    alert(`✅ Planilha salva com sucesso!\nCaminho: ${result.path}`);
+                } else if (result.error !== "Operação cancelada pelo usuário.") {
+                    alert(`❌ Erro na exportação: ${result.error}`);
+                }
+            } catch (err) {
+                alert(`❌ Erro crítico: ${err.message}`);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        };
+
+        carregarStats();
+    </script>
+</body>
+</html>

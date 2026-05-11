@@ -9,50 +9,6 @@ const logger = require('./logger');
 const sqlite3 = require('sqlite3').verbose();
 
 // ============================================================================
-// Database Initialization
-// ============================================================================
-const dbPath = path.join(USER_DATA_PATH, 'alpomoea_data.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    logger.log({ level: 'error', message: `Erro ao abrir banco de dados: ${err.message}` });
-  } else {
-    logger.log({ level: 'info', message: 'Conectado ao banco de dados SQLite.' });
-    initializeDatabase();
-  }
-});
-
-function initializeDatabase() {
-  db.serialize(() => {
-    // Tabela de Projetos
-    db.run(`
-            CREATE TABLE IF NOT EXISTS projetos (
-                id_projeto INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome TEXT NOT NULL,
-                dimensoes_json TEXT NOT NULL, -- Vai guardar ex: '["Genótipo", "Safra", "Tratamento"]'
-                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-    // Tabela de Amostras
-    db.run(`
-            CREATE TABLE IF NOT EXISTS amostras (
-                id_amostra INTEGER PRIMARY KEY AUTOINCREMENT,
-                id_projeto INTEGER NOT NULL,
-                tipo_analise TEXT NOT NULL, -- 'folha' ou 'raiz'
-                caminho_absoluto TEXT NOT NULL,
-                caminho_thumbnail TEXT,
-                metadados_json TEXT, -- JSON dinâmico
-                resultados_json TEXT, -- JSON de resultados
-                FOREIGN KEY (id_projeto) REFERENCES projetos(id_projeto) ON DELETE CASCADE
-            )
-        `);
-
-    // Index para performance em grandes volumes
-    db.run(`CREATE INDEX IF NOT EXISTS idx_amostras_projeto ON amostras(id_projeto)`);
-  });
-}
-
-// ============================================================================
 // SPEC 1 & 3: Configuração de Caminhos de Dados do Usuário
 // ============================================================================
 
@@ -63,6 +19,56 @@ const MODELS_PATH = isDev
   : path.join(process.resourcesPath, 'models');
 
 const USER_DATA_PATH = app.getPath('userData');
+
+
+// ============================================================================
+// Database Initialization
+// ============================================================================
+let db;
+
+function initializeDatabase() {
+  db.serialize(() => {
+    // Tabela de Projetos
+    db.run(`
+            CREATE TABLE IF NOT EXISTS projetos (
+                id_projeto INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                dimensoes_json TEXT NOT NULL,
+                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+    // Tabela de Amostras
+    db.run(`
+            CREATE TABLE IF NOT EXISTS amostras (
+                id_amostra INTEGER PRIMARY KEY AUTOINCREMENT,
+                id_projeto INTEGER NOT NULL,
+                tipo_analise TEXT NOT NULL,
+                caminho_absoluto TEXT NOT NULL,
+                caminho_thumbnail TEXT,
+                metadados_json TEXT,
+                resultados_json TEXT,
+                FOREIGN KEY (id_projeto) REFERENCES projetos(id_projeto) ON DELETE CASCADE
+            )
+        `);
+
+    // Index para performance em grandes volumes
+    db.run(`CREATE INDEX IF NOT EXISTS idx_amostras_projeto ON amostras(id_projeto)`);
+  });
+}
+
+function startDatabase() {
+    const dbPath = path.join(USER_DATA_PATH, 'alpomoea_data.sqlite');
+    db = new sqlite3.Database(dbPath, (err) => {
+        if (err) {
+            logger.log({ level: 'error', message: `Erro ao abrir banco de dados: ${err.message}` });
+        } else {
+            logger.log({ level: 'info', message: 'Conectado ao banco de dados SQLite.' });
+            initializeDatabase();
+        }
+    });
+}
+
 
 let envManager;
 
@@ -132,6 +138,9 @@ logger.log({ level: 'info', message: 'Iniciando app.' });
 
 // Garantir que os diretórios de dados do usuário existam
 ensureUserDataDirsExist();
+
+// Iniciar Banco de Dados após garantir diretórios e caminhos
+startDatabase();
 
 if (fs.existsSync(configPath)) {
   logger.log({ level: 'info', message: 'Dir de configuracao:', path: configPath });
@@ -1020,6 +1029,56 @@ ipcMain.handle('start-processing', async (event, { idProjeto, amostrasIds }) => 
           reject(new Error(`Python finalizou com código ${code}`));
         }
       });
+    });
+  });
+});
+
+ipcMain.handle('export-project', async (event, idProjeto) => {
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT id_amostra, tipo_analise, caminho_absoluto, metadados_json, resultados_json 
+      FROM amostras 
+      WHERE id_projeto = ? AND resultados_json IS NOT NULL`, 
+    [idProjeto], async (err, rows) => {
+      if (err) return resolve({ success: false, error: err.message });
+      if (rows.length === 0) return resolve({ success: false, error: "Nenhuma amostra processada encontrada para este projeto." });
+
+      let headersMeta = new Set();
+      let headersResult = new Set();
+      
+      const dados = rows.map(row => {
+        const meta = JSON.parse(row.metadados_json || '{}');
+        const res = JSON.parse(row.resultados_json || '{}');
+        Object.keys(meta).forEach(k => headersMeta.add(k));
+        Object.keys(res).forEach(k => headersResult.add(k));
+        return { ID: row.id_amostra, Tipo: row.tipo_analise, Caminho: row.caminho_absoluto, meta, res };
+      });
+
+      const headers = ['ID', 'Tipo_Analise', 'Caminho_Arquivo', ...Array.from(headersMeta), ...Array.from(headersResult)];
+      let csv = '\uFEFF'; 
+      csv += headers.join(';') + '\n';
+
+      dados.forEach(d => {
+        const row = [d.ID, d.Tipo, d.Caminho, ...Array.from(headersMeta).map(h => d.meta[h] || ''), ...Array.from(headersResult).map(h => d.res[h] || '')];
+        csv += row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';') + '\n';
+      });
+
+      const { filePath } = await dialog.showSaveDialog({
+        title: 'Salvar Relatório AIpomoea',
+        defaultPath: `Relatorio_AIpomoea_Projeto_${idProjeto}.csv`,
+        filters: [{ name: 'Planilha CSV', extensions: ['csv'] }]
+      });
+
+      if (filePath) {
+        try {
+          fs.writeFileSync(filePath, csv, 'utf8');
+          resolve({ success: true, path: filePath });
+        } catch (fsErr) {
+          resolve({ success: false, error: fsErr.message });
+        }
+      } else {
+        resolve({ success: false, error: "Operação cancelada pelo usuário." });
+      }
     });
   });
 });
