@@ -1,14 +1,27 @@
 /* styles.css */
 
 :root {
-    --primary--purple-color: #46316a;
-    --dim-gray: #696969;
-    --body-gray: #f0f0f0;
-    --header-gray: #e0e0e0;
-    --purple-hover-color: #6b5a88;
-    --green-leaves-color: #336a31;
-    --green-leaves-hover-color: #27AE60;
-    --panel-white: #fafafa;
+    --primary-purple: #4B0082;
+    --primary-purple-light: #6A5ACD;
+    --primary-purple-dark: #310055;
+    --accent-green: #2ecc71;
+    --accent-green-dark: #27ae60;
+    --bg-light: #f8f9fa;
+    --text-main: #2d3436;
+    --text-muted: #636e72;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --shadow-soft: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    --panel-white: #ffffff;
+
+    /* Legacy variables for compatibility */
+    --primary--purple-color: var(--primary-purple);
+    --dim-gray: var(--text-muted);
+    --body-gray: var(--bg-light);
+    --header-gray: #e9ecef;
+    --purple-hover-color: var(--primary-purple-light);
+    --green-leaves-color: var(--accent-green-dark);
+    --green-leaves-hover-color: var(--accent-green);
 }
 
 body {
@@ -41,6 +54,7 @@ h4 {
     color: var(--primary--purple-color);
     text-align: center;
 }
+
 p {
     font-size: 24px;
     color: var(--dim-gray);
@@ -85,24 +99,26 @@ a:hover {
 }
 
 nav {
-    width: calc(45% - 20px);
+    width: fit-content;
+    padding: 0 20px;
     margin: 0 auto;
-    background-color: var(--primary--purple-color);
-    border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
-    overflow: hidden;
-    display: flex; 
+    background: rgba(75, 0, 130, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: none;
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 10px; 
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    margin-left: auto;
-    margin-right: auto;
     z-index: 1000;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
+
 nav ul {
     list-style-type: none;
     padding: 0;
@@ -112,22 +128,29 @@ nav ul {
     align-items: center;
     height: 100%;
 }
+
 nav ul li {
     margin: 0 10px;
 }
+
 nav ul li a {
     position: relative;
     display: flex;
     text-decoration: none;
     color: white;
-    font-weight: bold;
-    padding: 15px 30px;
-    border-radius: 10px;
-    font-size: 20px;
-    transition: background-color 0.3s, color 0.3s;
-    line-height: 40px;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 14px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    line-height: 1;
     justify-content: center;
     align-items: center;
+    gap: 8px;
+}
+
+nav ul li a:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 nav ul li a img {
@@ -153,6 +176,7 @@ nav ul li a:hover span {
 nav ul li a:hover img {
     opacity: 0;
 }
+
 .app-version {
     position: fixed;
     bottom: 0;
@@ -162,4 +186,3 @@ nav ul li a:hover img {
     color: var(--dim-gray-color, gray);
     opacity: 0.75;
 }
-
