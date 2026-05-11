@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Importar Imagens</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-main: 'Inter', sans-serif;
+            --font-title: 'Outfit', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .import-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 80px auto 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .import-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .import-header h2 {
+            font-family: var(--font-title);
+            margin: 0;
+            color: var(--primary-purple);
+        }
+
+        .btn-back {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .setup-bar {
+            display: flex;
+            gap: 20px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        .setup-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .setup-item label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-family: var(--font-main);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .dropzone {
+            flex: 1;
+            border: 3px dashed var(--primary-purple-light);
+            border-radius: 24px;
+            background: rgba(111, 66, 193, 0.02);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            padding: 40px;
+            min-height: 200px;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            background: rgba(111, 66, 193, 0.05);
+            border-color: var(--primary-purple);
+        }
+
+        .dropzone i {
+            font-size: 64px;
+            color: var(--primary-purple-light);
+            margin-bottom: 20px;
+        }
+
+        .preview-area {
+            flex: 1;
+            background: #fff;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .preview-table-container {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-size: 13px;
+            color: #666;
+            position: sticky;
+            top: 0;
+            border-bottom: 2px solid #eee;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        .thumb-cell img {
+            width: 60px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            background: #eee;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .footer-actions {
+            padding: 20px 40px;
+            background: #fff;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        .btn-confirm {
+            background: var(--primary-purple);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(111, 66, 193, 0.2);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toggle Switch Styling */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 22px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--primary-purple); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .progress-subtext {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="top-container">
+            <nav style="animation: slideDown 0.7s;">
+                <ul>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="import-container">
+        <div class="import-header">
+            <button class="btn-back" onclick="window.location.href='index.html'">← Cancelar</button>
+            <h2>Importar Amostras: <span id="nomeProjetoAtivo">...</span></h2>
+        </div>
+
+        <div class="setup-bar">
+            <div class="setup-item">
+                <label>Tipo de Análise</label>
+                <select id="tipoAnalise">
+                    <option value="folha">Folhas (Leaf Analysis)</option>
+                    <option value="raiz">Raízes (Root Analysis)</option>
+                </select>
+            </div>
+            <div class="setup-item">
+                <label>Estratégia de Metadados</label>
+                <select id="selectEstrategia">
+                    <option value="manual">Etiquetagem Manual (Lote)</option>
+                    <option value="pastas" selected>Hierarquia de Pastas (Folders)</option>
+                    <option value="nomes">Nome do Arquivo (Regex)</option>
+                </select>
+            </div>
+            <div class="setup-item">
+                <label>Modo de Importação</label>
+                <div class="toggle-container">
+                    <span style="font-size: 11px; font-weight: 600; color: #666;">Economia</span>
+                    <label class="switch">
+                        <input type="checkbox" id="modoCofre">
+                        <span class="slider"></span>
+                    </label>
+                    <span style="font-size: 11px; font-weight: 600; color: var(--primary-purple);">Cofre (Cópia)</span>
+                </div>
+            </div>
+            <div class="setup-item" style="margin-left: auto; text-align: right;">
+                <label>Variáveis Detectadas</label>
+                <div id="labelsDimensoes" style="font-weight: 600; color: var(--primary-purple);">...</div>
+            </div>
+        </div>
+
+        <div id="dropzone" class="dropzone">
+            <div style="font-size: 50px; margin-bottom: 10px;">📂</div>
+            <h3>Arraste pastas ou imagens aqui</h3>
+            <p>Ou clique para selecionar manualmente</p>
+            <input type="file" id="fileInput" webkitdirectory multiple hidden>
+        </div>
+
+        <div id="previewArea" class="preview-area" style="display:none;">
+            <div class="preview-table-container">
+                <table id="tabelaPreview">
+                    <thead>
+                        <tr id="headerPreview">
+                            <th>Miniatura</th>
+                            <th>Arquivo</th>
+                            <!-- Dimensões dinâmicas entrarão aqui -->
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="footer-actions">
+                <button class="btn-back" onclick="location.reload()">Limpar e Reiniciar</button>
+                <button id="btnConfirmarImport" class="btn-confirm">Confirmar e Ingerir no Banco</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+        <div class="spinner"></div>
+        <h3 id="loadingText">Processando Imagens...</h3>
+        <p>Gerando miniaturas e extraindo metadados</p>
+    </div>
+
+    <script>
+        // Pegar parâmetros da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const idProjeto = urlParams.get('id');
+        const nomeProjeto = urlParams.get('nome');
+        const dimensoesStr = urlParams.get('dimensoes');
+        const dimensoes = dimensoesStr ? JSON.parse(dimensoesStr) : [];
+
+        document.getElementById('nomeProjetoAtivo').textContent = nomeProjeto || 'Projeto';
+        document.getElementById('labelsDimensoes').textContent = dimensoes.join(' → ');
+
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('previewArea');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const tableBody = document.querySelector('#tabelaPreview tbody');
+        const tableHeader = document.getElementById('headerPreview');
+
+        let amostrasProcessadas = [];
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 0) {
+                await processFiles(files);
+            }
+        });
+
+        fileInput.addEventListener('change', async () => {
+            const files = Array.from(fileInput.files);
+            if (files.length > 0) {
+                await processFiles(files);
+            }
+        });
+
+        async function processFiles(files) {
+            loadingOverlay.style.display = 'flex';
+            document.getElementById('loadingText').textContent = 'Processando Imagens...';
+            
+            // Filtra apenas imagens
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff'];
+            const filePaths = files
+                .map(f => f.path || window.webUtils.getPathForFile(f))
+                .filter(p => imageExtensions.some(ext => p.toLowerCase().endsWith(ext)));
+
+            if (filePaths.length === 0) {
+                alert("Nenhuma imagem válida encontrada.");
+                loadingOverlay.style.display = 'none';
+                return;
+            }
+
+            const estrategia = document.getElementById('selectEstrategia').value;
+            const modoCofre = document.getElementById('modoCofre').checked;
+
+            // Escutar progresso do IPC
+            const progressListener = (event, progress) => {
+                document.getElementById('loadingText').textContent = `Processando: ${progress.current} / ${progress.total}`;
+            };
+            window.electronAPI.on('import-progress', progressListener);
+
+            try {
+                amostrasProcessadas = await window.electronAPI.invoke('import-files', {
+                    idProjeto: parseInt(idProjeto),
+                    filePaths,
+                    estrategia,
+                    dimensoes,
+                    modoCofre
+                });
+
+                renderPreview(estrategia);
+            } catch (error) {
+                console.error("Erro no processamento:", error);
+                alert("Erro ao processar imagens.");
+            } finally {
+                window.electronAPI.removeListener('import-progress', progressListener);
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        function renderPreview(estrategia) {
+            dropzone.style.display = 'none';
+            previewArea.style.display = 'flex';
+            tableBody.innerHTML = '';
+
+            // Adiciona colunas de dimensões se necessário
+            if (estrategia !== 'manual') {
+                // Limpa cabeçalhos extras
+                while (tableHeader.cells.length > 2) {
+                    tableHeader.deleteCell(2);
+                }
+                // Adiciona novos
+                dimensoes.forEach(dim => {
+                    const th = document.createElement('th');
+                    th.textContent = dim;
+                    tableHeader.appendChild(th);
+                });
+            }
+
+            amostrasProcessadas.forEach(amostra => {
+                const tr = document.createElement('tr');
+                
+                let html = `
+                    <td class="thumb-cell"><img src="file://${amostra.caminhoThumbnail}"></td>
+                    <td><div style="font-weight:600">${amostra.nomeArquivo}</div><div style="font-size:10px; color:#999">${amostra.caminhoAbsoluto}</div></td>
+                `;
+
+                if (estrategia !== 'manual') {
+                    dimensoes.forEach(dim => {
+                        html += `<td><span class="tag">${amostra.metadados[dim] || 'N/A'}</span></td>`;
+                    });
+                }
+
+                tr.innerHTML = html;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('btnConfirmarImport').addEventListener('click', async () => {
+            loadingOverlay.style.display = 'flex';
+            document.getElementById('loadingText').textContent = 'Salvando no Banco de Dados...';
+
+            const tipoAnalise = document.getElementById('tipoAnalise').value;
+
+            try {
+                const result = await window.electronAPI.invoke('finalize-ingestion', {
+                    idProjeto: parseInt(idProjeto),
+                    tipoAnalise,
+                    amostras: amostrasProcessadas
+                });
+
+                if (result.success) {
+                    alert(`${result.count} amostras importadas com sucesso!`);
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error("Erro na ingestão:", error);
+                alert("Erro ao salvar dados no banco.");
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

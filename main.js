@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcRenderer, dialog } = require('electron')
+const { app, BrowserWindow, ipcRenderer, dialog, nativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs');
 const { execFile } = require('child_process');
@@ -46,6 +46,9 @@ function initializeDatabase() {
                 FOREIGN KEY (id_projeto) REFERENCES projetos(id_projeto) ON DELETE CASCADE
             )
         `);
+
+    // Index para performance em grandes volumes
+    db.run(`CREATE INDEX IF NOT EXISTS idx_amostras_projeto ON amostras(id_projeto)`);
   });
 }
 
@@ -844,6 +847,108 @@ ipcMain.handle('get-projects', async (event) => {
         resolve(rows);
       }
     });
+  });
+});
+
+ipcMain.handle('import-files', async (event, { idProjeto, filePaths, estrategia, dimensoes, modoCofre }) => {
+  const thumbsDir = path.join(USER_DATA_PATH, 'thumbnails');
+  const projectImagesDir = modoCofre ? path.join(USER_DATA_PATH, 'projects', idProjeto.toString(), 'images') : null;
+  
+  if (!fs.existsSync(thumbsDir)) fs.mkdirSync(thumbsDir, { recursive: true });
+  if (modoCofre && !fs.existsSync(projectImagesDir)) fs.mkdirSync(projectImagesDir, { recursive: true });
+
+  let previewData = [];
+  const CHUNK_SIZE = 10;
+
+  // Função auxiliar para processar um único arquivo
+  const processFile = async (filePath) => {
+    try {
+      const image = nativeImage.createFromPath(filePath);
+      if (image.isEmpty()) return null;
+
+      // 1. Gerar Thumbnail
+      const thumbnail = image.resize({ width: 300 });
+      const thumbName = `thumb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${path.basename(filePath)}`;
+      const thumbPath = path.join(thumbsDir, thumbName);
+      fs.writeFileSync(thumbPath, thumbnail.toJPEG(80));
+
+      // 2. Modo Cofre: Copiar arquivo original
+      let finalPath = filePath;
+      if (modoCofre) {
+        const destPath = path.join(projectImagesDir, path.basename(filePath));
+        await fs.promises.copyFile(filePath, destPath);
+        finalPath = destPath;
+      }
+
+      // 3. Extração de Metadados
+      let metadados = {};
+      if (estrategia === 'pastas') {
+        const partes = filePath.split(path.sep);
+        const dimInvertidas = [...dimensoes].reverse();
+        dimInvertidas.forEach((dim, index) => {
+          metadados[dim] = partes[partes.length - 2 - index] || 'N/A';
+        });
+      }
+
+      return {
+        caminhoAbsoluto: finalPath,
+        caminhoThumbnail: thumbPath,
+        nomeArquivo: path.basename(filePath),
+        metadados: metadados
+      };
+    } catch (err) {
+      logger.log({ level: 'error', message: `Erro ao processar arquivo ${filePath}: ${err.message}` });
+      return null;
+    }
+  };
+
+  // Processamento em Chunks para evitar estouro de memória
+  for (let i = 0; i < filePaths.length; i += CHUNK_SIZE) {
+    const chunk = filePaths.slice(i, i + CHUNK_SIZE);
+    const results = await Promise.all(chunk.map(processFile));
+    previewData.push(...results.filter(r => r !== null));
+    
+    // Notificar progresso para a UI (opcional, mas bom para UX)
+    if (event.sender) {
+      event.sender.send('import-progress', {
+        current: Math.min(i + CHUNK_SIZE, filePaths.length),
+        total: filePaths.length
+      });
+    }
+  }
+
+  return previewData;
+});
+
+ipcMain.handle('finalize-ingestion', async (event, { idProjeto, tipoAnalise, amostras }) => {
+  return new Promise((resolve, reject) => {
+    const stmt = db.prepare(`
+            INSERT INTO amostras (id_projeto, tipo_analise, caminho_absoluto, caminho_thumbnail, metadados_json)
+            VALUES (?, ?, ?, ?, ?)
+        `);
+
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION");
+      amostras.forEach(amostra => {
+        stmt.run(
+          idProjeto,
+          tipoAnalise,
+          amostra.caminhoAbsoluto,
+          amostra.caminhoThumbnail,
+          JSON.stringify(amostra.metadados)
+        );
+      });
+      db.run("COMMIT", (err) => {
+        if (err) {
+          logger.log({ level: 'error', message: `Erro ao finalizar ingestão: ${err.message}` });
+          reject(err);
+        } else {
+          logger.log({ level: 'info', message: `${amostras.length} amostras ingeridas para o projeto ${idProjeto}` });
+          resolve({ success: true, count: amostras.length });
+        }
+      });
+    });
+    stmt.finalize();
   });
 });
 

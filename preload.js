@@ -26,7 +26,9 @@ const validChannels = [
   'open-db-file-dialog',
   'selected-db-file',
   'create-project',
-  'get-projects'
+  'get-projects',
+  'import-files',
+  'finalize-ingestion'
 ];
 
 // Expor APIs seguras para o renderer

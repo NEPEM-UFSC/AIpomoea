@@ -283,9 +283,13 @@
                 const result = await window.electronAPI.invoke('create-project', novoProjetoData);
                 
                 if(result.success) {
-                    // Redireciona para a home ou para a tela de importação do projeto
-                    // Por enquanto, volta para a home
-                    window.location.href = 'index.html';
+                    // Redireciona para a tela de importação com o contexto do projeto
+                    const params = new URLSearchParams({
+                        id: result.id,
+                        nome: novoProjetoData.nome,
+                        dimensoes: JSON.stringify(novoProjetoData.dimensoes)
+                    });
+                    window.location.href = `import_project.html?${params.toString()}`;
                 }
             } catch (error) {
                 console.error("Erro ao salvar projeto:", error);
