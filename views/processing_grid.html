@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Processamento</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@600;800&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --font-main: 'Inter', sans-serif;
+            --font-title: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: #f4f7f6;
+            color: #2c3e50;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 40px;
+            margin-top: 70px;
+            box-sizing: border-box;
+        }
+
+        .grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        }
+
+        .grid-header h2 {
+            font-family: var(--font-title);
+            margin: 0;
+            color: var(--primary-purple);
+            font-size: 24px;
+        }
+
+        .controles-lote {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .selection-info {
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .btn-process {
+            background: var(--primary-purple);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-process:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn-process:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.3);
+        }
+
+        /* Progresso */
+        .progresso-wrapper {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            animation: slideDown 0.4s ease-out;
+        }
+
+        .barra-fundo {
+            background: #eee;
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .barra-cor {
+            background: linear-gradient(90deg, var(--primary-purple) 0%, var(--primary-purple-light) 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+        }
+
+        .progresso-texto {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 700;
+            color: #555;
+        }
+
+        /* Grid */
+        .amostras-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            overflow-y: auto;
+            padding-bottom: 40px;
+            padding-right: 10px;
+        }
+
+        .amostra-card {
+            background: white;
+            border-radius: 18px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+        }
+
+        .amostra-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .amostra-card.selected {
+            border-color: var(--primary-purple);
+            background: #fdfbff;
+        }
+
+        .amostra-card.processing {
+            filter: grayscale(0.5);
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .amostra-card.done {
+            border-color: var(--accent-green);
+        }
+
+        .thumb-wrapper {
+            position: relative;
+            width: 100%;
+            height: 140px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+
+        .thumb-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .amostra-info {
+            margin-top: 12px;
+        }
+
+        .amostra-nome {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .amostra-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .tag-pill {
+            font-size: 10px;
+            background: #f0f2f5;
+            color: #666;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-weight: 600;
+        }
+
+        .resultados-area {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #eee;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--primary-purple);
+        }
+
+        /* Selection controls */
+        .selection-actions {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-tiny {
+            background: #eee;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-tiny:hover {
+            background: #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="top-container">
+            <nav style="animation: slideDown 0.7s;">
+                <ul>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio"
+                                style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config"
+                                style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda"
+                                style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar"
+                                style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre"
+                                style="filter: invert(100%);"><span>Sobre</span></a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="grid-header">
+            <div>
+                <h2>Projeto: <span id="nomeProjeto">...</span></h2>
+                <div style="font-size: 13px; color: #888; margin-top: 5px;">Gerenciamento e Processamento de Amostras
+                </div>
+            </div>
+            <div class="controles-lote">
+                <span class="selection-info"><span id="countSelecionadas">0</span> selecionadas</span>
+                <button id="btnProcessar" class="btn-process" disabled>
+                    <span>▶</span> Iniciar Processamento IA
+                </button>
+            </div>
+        </div>
+
+        <div id="progressoUI" class="progresso-wrapper" style="display: none;">
+            <div class="barra-fundo">
+                <div id="barraProgresso" class="barra-cor"></div>
+            </div>
+            <div class="progresso-texto">
+                <span id="labelStatus">Processando amostras...</span>
+                <span id="percentualTexto">0%</span>
+            </div>
+        </div>
+
+        <div class="selection-actions">
+            <button class="btn-tiny" id="btnSelectAll">Selecionar Tudo</button>
+            <button class="btn-tiny" id="btnSelectNone">Desmarcar Tudo</button>
+        </div>
+
+        <div class="amostras-grid" id="gridAmostras">
+            <!-- Cards gerados via JS -->
+        </div>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const idProjeto = urlParams.get('id');
+        const nomeProjeto = urlParams.get('nome');
+
+        document.getElementById('nomeProjeto').textContent = nomeProjeto || 'Projeto';
+
+        let amostras = [];
+        let selecionadas = new Set();
+        let emProcessamento = false;
+
+        async function carregarAmostras() {
+            try {
+                amostras = await window.electronAPI.invoke('get-project-samples', parseInt(idProjeto));
+                renderGrid();
+            } catch (err) {
+                console.error("Erro ao carregar amostras:", err);
+            }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('gridAmostras');
+            grid.innerHTML = '';
+
+            amostras.forEach(amostra => {
+                const card = document.createElement('div');
+                card.className = `amostra-card ${selecionadas.has(amostra.id_amostra) ? 'selected' : ''}`;
+                if (amostra.resultados_json) card.classList.add('done');
+                card.dataset.id = amostra.id_amostra;
+
+                const metadados = JSON.parse(amostra.metadados_json || '{}');
+                const resultados = JSON.parse(amostra.resultados_json || 'null');
+
+                let tagsHtml = '';
+                for (const [key, val] of Object.entries(metadados)) {
+                    tagsHtml += `<span class="tag-pill">${val}</span>`;
+                }
+
+                card.innerHTML = `
+                    <div class="thumb-wrapper">
+                        <img src="file://${amostra.caminho_thumbnail}" loading="lazy">
+                        <div class="status-badge">${amostra.resultados_json ? '✅' : '📷'}</div>
+                    </div>
+                    <div class="amostra-info">
+                        <div class="amostra-nome" title="${amostra.caminho_absoluto}">${path_basename(amostra.caminho_absoluto)}</div>
+                        <div class="amostra-tags">${tagsHtml}</div>
+                        ${resultados ? `<div class="resultados-area">Área: ${resultados.area_foliar_cm2} cm²</div>` : ''}
+                    </div>
+                `;
+
+                card.onclick = () => toggleSelecao(amostra.id_amostra);
+                grid.appendChild(card);
+            });
+
+            updateControles();
+        }
+
+        function path_basename(path) {
+            return path.split(/[\\\/]/).pop();
+        }
+
+        function toggleSelecao(id) {
+            if (emProcessamento) return;
+            if (selecionadas.has(id)) selecionadas.delete(id);
+            else selecionadas.add(id);
+            renderGrid();
+        }
+
+        function updateControles() {
+            document.getElementById('countSelecionadas').textContent = selecionadas.size;
+            document.getElementById('btnProcessar').disabled = selecionadas.size === 0 || emProcessamento;
+        }
+
+        document.getElementById('btnSelectAll').onclick = () => {
+            amostras.forEach(a => selecionadas.add(a.id_amostra));
+            renderGrid();
+        };
+
+        document.getElementById('btnSelectNone').onclick = () => {
+            selecionadas.clear();
+            renderGrid();
+        };
+
+        document.getElementById('btnProcessar').onclick = async () => {
+            if (selecionadas.size === 0) return;
+
+            emProcessamento = true;
+            updateControles();
+
+            const progressoUI = document.getElementById('progressoUI');
+            const barra = document.getElementById('barraProgresso');
+            const percTxt = document.getElementById('percentualTexto');
+            const labelStatus = document.getElementById('labelStatus');
+
+            progressoUI.style.display = 'block';
+            barra.style.width = '0%';
+            percTxt.textContent = '0%';
+
+            const idsParaProcessar = Array.from(selecionadas);
+            let processadas = 0;
+
+            const progressListener = (event, result) => {
+                processadas++;
+                const percent = Math.round((processadas / idsParaProcessar.length) * 100);
+                barra.style.width = `${percent}%`;
+                percTxt.textContent = `${percent}%`;
+                labelStatus.textContent = `Processando: ${processadas} / ${idsParaProcessar.length}`;
+
+                // Marcar card como concluído na UI sem re-renderizar tudo se possível
+                const card = document.querySelector(`.amostra-card[data-id="${result.id}"]`);
+                if (card) {
+                    card.classList.add('done');
+                    card.querySelector('.status-badge').textContent = '✅';
+                }
+            };
+
+            window.electronAPI.on('atualizacao-progresso', progressListener);
+
+            try {
+                await window.electronAPI.invoke('start-processing', {
+                    idProjeto: parseInt(idProjeto),
+                    amostrasIds: idsParaProcessar
+                });
+
+                labelStatus.textContent = 'Processamento Concluído!';
+                setTimeout(() => {
+                    progressoUI.style.display = 'none';
+                    carregarAmostras(); // Recarrega tudo para atualizar dados finais
+                }, 2000);
+
+            } catch (err) {
+                console.error("Erro no processamento IA:", err);
+                alert("Erro durante o processamento de IA.");
+            } finally {
+                window.electronAPI.removeListener('atualizacao-progresso', progressListener);
+                emProcessamento = false;
+                selecionadas.clear();
+                updateControles();
+            }
+        };
+
+        carregarAmostras();
+    </script>
+</body>
+
+</html>

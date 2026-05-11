@@ -360,36 +360,56 @@
         </div>
 
         <div class="recent-ensaios">
-            <h3>Ensaios Recentes</h3>
-
-            <a href="#" class="ensaio-item">
-                <div class="folder-icon">📁</div>
-                <div class="ensaio-info">
-                    <span class="ensaio-path">D:\Pesquisas\Batata_Doce\Ensaio_Inverno_2024</span>
-                    <span class="ensaio-date">Modificado em 10/05/2024 às 14:15</span>
-                </div>
-            </a>
-
-            <a href="#" class="ensaio-item">
-                <div class="folder-icon">📁</div>
-                <div class="ensaio-info">
-                    <span class="ensaio-path">C:\Users\Lab_Genetica\Documents\AIpomoea\Tese_Doutorado_Amostras</span>
-                    <span class="ensaio-date">Modificado em 08/05/2024 às 10:30</span>
-                </div>
-            </a>
-
-            <a href="#" class="ensaio-item">
-                <div class="folder-icon">📁</div>
-                <div class="ensaio-info">
-                    <span class="ensaio-path">E:\Backup\Imagens_Campo\Setor_Norte_Lote_02</span>
-                    <span class="ensaio-date">Modificado em 05/05/2024 às 17:00</span>
-                </div>
-            </a>
+            <h3>Projetos Ativos</h3>
+            <div id="gridRecentes">
+                <!-- Carregado dinamicamente -->
+            </div>
         </div>
     </main>
     <footer class="app-version" id="app-version">
         Versão:
     </footer>
+    <script>
+        async function loadProjects() {
+            try {
+                const projects = await window.electronAPI.invoke('get-projects');
+                const container = document.getElementById('gridRecentes');
+                if (!container) return;
+
+                if (projects.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999; margin-top: 20px;">Nenhum projeto encontrado. Comece criando um novo!</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                projects.forEach(p => {
+                    const date = new Date(p.data_criacao).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    const item = document.createElement('a');
+                    item.className = 'ensaio-item';
+                    item.href = `processing_grid.html?id=${p.id_projeto}&nome=${encodeURIComponent(p.nome)}`;
+                    item.innerHTML = `
+                        <div class="folder-icon">📂</div>
+                        <div class="ensaio-info">
+                            <div class="ensaio-path">${p.nome}</div>
+                            <div class="ensaio-date">Criado em: ${date}</div>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (err) {
+                console.error("Erro ao carregar projetos:", err);
+            }
+        }
+
+        loadProjects();
+    </script>
 </body>
 <script src="../static/js/version.js"></script>
 

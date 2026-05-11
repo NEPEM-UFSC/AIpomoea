@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +10,8 @@
     <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --font-main: 'Inter', sans-serif;
@@ -67,7 +69,7 @@
             background: #fff;
             padding: 20px;
             border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             margin-bottom: 30px;
             align-items: center;
         }
@@ -110,7 +112,8 @@
             min-height: 200px;
         }
 
-        .dropzone:hover, .dropzone.dragover {
+        .dropzone:hover,
+        .dropzone.dragover {
             background: rgba(111, 66, 193, 0.05);
             border-color: var(--primary-purple);
         }
@@ -128,7 +131,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
             animation: slideUp 0.4s ease-out;
         }
 
@@ -202,7 +205,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255,255,255,0.8);
+            background: rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -222,8 +225,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* Toggle Switch Styling */
@@ -244,12 +252,19 @@
             height: 22px;
         }
 
-        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
 
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background-color: #ccc;
             transition: .4s;
             border-radius: 22px;
@@ -258,15 +273,22 @@
         .slider:before {
             position: absolute;
             content: "";
-            height: 16px; width: 16px;
-            left: 3px; bottom: 3px;
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
             background-color: white;
             transition: .4s;
             border-radius: 50%;
         }
 
-        input:checked + .slider { background-color: var(--primary-purple); }
-        input:checked + .slider:before { transform: translateX(22px); }
+        input:checked+.slider {
+            background-color: var(--primary-purple);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(22px);
+        }
 
         .progress-subtext {
             font-size: 14px;
@@ -275,16 +297,22 @@
         }
     </style>
 </head>
+
 <body>
     <header>
         <div class="top-container">
             <nav style="animation: slideDown 0.7s;">
                 <ul>
-                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
-                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
-                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
-                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
-                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio"
+                                style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config"
+                                style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda"
+                                style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar"
+                                style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre"
+                                style="filter: invert(100%);"><span>Sobre</span></a></li>
                 </ul>
             </nav>
         </div>
@@ -396,7 +424,7 @@
         dropzone.addEventListener('drop', async (e) => {
             e.preventDefault();
             dropzone.classList.remove('dragover');
-            
+
             const files = Array.from(e.dataTransfer.files);
             if (files.length > 0) {
                 await processFiles(files);
@@ -413,7 +441,7 @@
         async function processFiles(files) {
             loadingOverlay.style.display = 'flex';
             document.getElementById('loadingText').textContent = 'Processando Imagens...';
-            
+
             // Filtra apenas imagens
             const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff'];
             const filePaths = files
@@ -475,7 +503,7 @@
 
             amostrasProcessadas.forEach(amostra => {
                 const tr = document.createElement('tr');
-                
+
                 let html = `
                     <td class="thumb-cell"><img src="file://${amostra.caminhoThumbnail}"></td>
                     <td><div style="font-weight:600">${amostra.nomeArquivo}</div><div style="font-size:10px; color:#999">${amostra.caminhoAbsoluto}</div></td>
@@ -507,7 +535,11 @@
 
                 if (result.success) {
                     alert(`${result.count} amostras importadas com sucesso!`);
-                    window.location.href = 'index.html';
+                    const params = new URLSearchParams({
+                        id: idProjeto,
+                        nome: nomeProjeto
+                    });
+                    window.location.href = `processing_grid.html?${params.toString()}`;
                 }
             } catch (error) {
                 console.error("Erro na ingestão:", error);
@@ -518,4 +550,5 @@
         });
     </script>
 </body>
+
 </html>

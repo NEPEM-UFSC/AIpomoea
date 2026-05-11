@@ -28,7 +28,10 @@ const validChannels = [
   'create-project',
   'get-projects',
   'import-files',
-  'finalize-ingestion'
+  'finalize-ingestion',
+  'get-project-samples',
+  'start-processing',
+  'atualizacao-progresso'
 ];
 
 // Expor APIs seguras para o renderer

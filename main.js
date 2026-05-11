@@ -853,7 +853,7 @@ ipcMain.handle('get-projects', async (event) => {
 ipcMain.handle('import-files', async (event, { idProjeto, filePaths, estrategia, dimensoes, modoCofre }) => {
   const thumbsDir = path.join(USER_DATA_PATH, 'thumbnails');
   const projectImagesDir = modoCofre ? path.join(USER_DATA_PATH, 'projects', idProjeto.toString(), 'images') : null;
-  
+
   if (!fs.existsSync(thumbsDir)) fs.mkdirSync(thumbsDir, { recursive: true });
   if (modoCofre && !fs.existsSync(projectImagesDir)) fs.mkdirSync(projectImagesDir, { recursive: true });
 
@@ -907,7 +907,7 @@ ipcMain.handle('import-files', async (event, { idProjeto, filePaths, estrategia,
     const chunk = filePaths.slice(i, i + CHUNK_SIZE);
     const results = await Promise.all(chunk.map(processFile));
     previewData.push(...results.filter(r => r !== null));
-    
+
     // Notificar progresso para a UI (opcional, mas bom para UX)
     if (event.sender) {
       event.sender.send('import-progress', {
@@ -949,6 +949,78 @@ ipcMain.handle('finalize-ingestion', async (event, { idProjeto, tipoAnalise, amo
       });
     });
     stmt.finalize();
+  });
+});
+
+ipcMain.handle('get-project-samples', async (event, idProjeto) => {
+  return new Promise((resolve, reject) => {
+    db.all("SELECT * FROM amostras WHERE id_projeto = ?", [idProjeto], (err, rows) => {
+      if (err) {
+        logger.log({ level: 'error', message: `Erro ao buscar amostras: ${err.message}` });
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+});
+
+ipcMain.handle('start-processing', async (event, { idProjeto, amostrasIds }) => {
+  return new Promise((resolve, reject) => {
+    // 1. Buscar caminhos reais das amostras selecionadas
+    const placeholders = amostrasIds.map(() => '?').join(',');
+    db.all(`SELECT id_amostra, caminho_absoluto FROM amostras WHERE id_amostra IN (${placeholders})`, amostrasIds, (err, rows) => {
+      if (err) {
+        logger.log({ level: 'error', message: `Erro ao buscar caminhos para processamento: ${err.message}` });
+        return reject(err);
+      }
+
+      // 2. Criar arquivo de lote temporário
+      const tempPath = path.join(USER_DATA_PATH, `batch_${idProjeto}_${Date.now()}.json`);
+      const batchData = rows.map(r => ({ id: r.id_amostra, caminho: r.caminho_absoluto }));
+      fs.writeFileSync(tempPath, JSON.stringify(batchData));
+
+      // 3. Invocar Python
+      const scriptPath = path.join(__dirname, 'motor_ia.py');
+      // Usar o ambiente Python configurado pelo envManager
+      const pythonProcess = childProcess.spawn(envManager.venvPythonPath, [scriptPath, tempPath]);
+
+      pythonProcess.stdout.on('data', (data) => {
+        const lines = data.toString().split('\n');
+        lines.forEach(line => {
+          if (!line.trim()) return;
+          try {
+            const resultado = JSON.parse(line);
+
+            // Salvar no Banco
+            db.run('UPDATE amostras SET resultados_json = ? WHERE id_amostra = ?',
+              [JSON.stringify(resultado.dados), resultado.id], (updErr) => {
+                if (updErr) logger.log({ level: 'error', message: `Erro ao salvar resultado da amostra ${resultado.id}: ${updErr.message}` });
+              });
+
+            // Notificar UI
+            if (event.sender) {
+              event.sender.send('atualizacao-progresso', resultado);
+            }
+          } catch (e) {
+            logger.log({ level: 'debug', message: `Python log: ${line}` });
+          }
+        });
+      });
+
+      pythonProcess.stderr.on('data', (data) => {
+        logger.log({ level: 'error', message: `Python Error: ${data.toString()}` });
+      });
+
+      pythonProcess.on('close', (code) => {
+        fs.unlinkSync(tempPath);
+        if (code === 0) {
+          resolve({ success: true });
+        } else {
+          reject(new Error(`Python finalizou com código ${code}`));
+        }
+      });
+    });
   });
 });
 

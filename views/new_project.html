@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +10,8 @@
     <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --font-main: 'Inter', sans-serif;
@@ -42,8 +44,8 @@
             background: #ffffff;
             border-radius: 24px;
             padding: 40px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         h2 {
@@ -183,16 +185,22 @@
         }
     </style>
 </head>
+
 <body>
     <header>
         <div class="top-container">
             <nav style="animation: slideDown 0.7s;">
                 <ul>
-                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
-                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
-                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
-                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
-                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio"
+                                style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config"
+                                style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda"
+                                style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar"
+                                style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre"
+                                style="filter: invert(100%);"><span>Sobre</span></a></li>
                 </ul>
             </nav>
         </div>
@@ -201,7 +209,7 @@
     <div class="container">
         <div class="novo-projeto-card">
             <h2>Novo Projeto de Fenotipagem</h2>
-            
+
             <div class="form-group">
                 <label for="nomeProjeto">Nome do Projeto</label>
                 <input type="text" id="nomeProjeto" placeholder="Ex: Avaliação Cultivares 2024 - Seca">
@@ -210,13 +218,13 @@
             <div class="form-group">
                 <label>Variáveis do Experimento (Dimensões)</label>
                 <p class="dica">Quais metadados você vai avaliar? Ex: Genótipo, Tratamento, Repetição.</p>
-                
+
                 <div id="listaDimensoes" class="dimensoes-lista">
                     <div class="input-wrapper">
                         <input type="text" class="input-dimensao" placeholder="Ex: Genótipo" value="Genótipo">
                     </div>
                 </div>
-                
+
                 <button id="btnAdicionarDimensao" class="btn-add">+ Adicionar Outra Variável</button>
             </div>
 
@@ -235,17 +243,17 @@
         btnAdd.addEventListener('click', () => {
             const wrapper = document.createElement('div');
             wrapper.className = 'input-wrapper';
-            
+
             const novoInput = document.createElement('input');
             novoInput.type = 'text';
             novoInput.className = 'input-dimensao';
             novoInput.placeholder = 'Nova Variável (ex: Tratamento)';
-            
+
             const btnRemove = document.createElement('button');
             btnRemove.className = 'btn-remove';
             btnRemove.innerHTML = '×';
             btnRemove.onclick = () => wrapper.remove();
-            
+
             wrapper.appendChild(novoInput);
             wrapper.appendChild(btnRemove);
             lista.appendChild(wrapper);
@@ -254,21 +262,21 @@
 
         btnSave.addEventListener('click', async () => {
             const nome = document.getElementById('nomeProjeto').value.trim();
-            
+
             const inputsDimensoes = document.querySelectorAll('.input-dimensao');
             let dimensoes = [];
             inputsDimensoes.forEach(input => {
-                if(input.value.trim() !== '') {
+                if (input.value.trim() !== '') {
                     dimensoes.push(input.value.trim());
                 }
             });
 
-            if(!nome) {
+            if (!nome) {
                 alert("Por favor, dê um nome ao seu projeto.");
                 return;
             }
 
-            if(dimensoes.length === 0) {
+            if (dimensoes.length === 0) {
                 alert("Adicione pelo menos uma variável ao experimento.");
                 return;
             }
@@ -281,8 +289,8 @@
             try {
                 // IPC Invoke para o main process
                 const result = await window.electronAPI.invoke('create-project', novoProjetoData);
-                
-                if(result.success) {
+
+                if (result.success) {
                     // Redireciona para a tela de importação com o contexto do projeto
                     const params = new URLSearchParams({
                         id: result.id,
@@ -298,4 +306,5 @@
         });
     </script>
 </body>
+
 </html>
