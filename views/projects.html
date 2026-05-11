@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Gestão de Projetos</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-main: 'Inter', sans-serif;
+            --font-title: 'Outfit', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 100px auto 40px;
+            padding: 0 20px;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-family: var(--font-title);
+            color: var(--primary-purple);
+            margin: 0;
+        }
+
+        .btn-new {
+            background: var(--primary-purple);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-new:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.2);
+        }
+
+        .project-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #eee;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .project-card:hover {
+            border-color: var(--primary-purple-light);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transform: translateX(5px);
+        }
+
+        .project-main {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .project-icon {
+            font-size: 32px;
+            background: #f0f0f0;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+        .project-info h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .project-info p {
+            margin: 5px 0 0 0;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-weight: 700;
+            background: #e9ecef;
+            color: #666;
+        }
+
+        .badge.active {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="top-container">
+            <nav style="animation: slideDown 0.7s;">
+                <ul>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./projects.html"><img src="../static/images/models.svg" alt="Projetos" style="filter: invert(100%);"><span>Projetos</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="header-section">
+            <h2>Gestão de Projetos</h2>
+            <a href="./new_project.html" class="btn-new">+ Novo Projeto</a>
+        </div>
+
+        <div id="projectList" class="project-list">
+            <!-- Projetos carregados aqui -->
+        </div>
+    </div>
+
+    <script>
+        async function loadProjects() {
+            try {
+                const projects = await window.electronAPI.invoke('get-projects');
+                const container = document.getElementById('projectList');
+                
+                if (projects.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">Nenhum projeto encontrado.</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                projects.forEach(p => {
+                    const date = new Date(p.data_criacao).toLocaleDateString('pt-BR');
+                    
+                    const card = document.createElement('a');
+                    card.className = 'project-card';
+                    card.href = `processing_grid.html?id=${p.id_projeto}&nome=${encodeURIComponent(p.nome)}`;
+                    
+                    card.innerHTML = `
+                        <div class="project-main">
+                            <div class="project-icon">📂</div>
+                            <div class="project-info">
+                                <h3>${p.nome}</h3>
+                                <p>Criado em ${date}</p>
+                            </div>
+                        </div>
+                        <div class="project-actions">
+                            <span class="badge active">Ativo</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        loadProjects();
+    </script>
+</body>
+</html>
