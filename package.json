@@ -8,6 +8,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --inspect=5858",
+    "ui:dev": "electron . --ui-only --inspect=5858",
     "debug": "set DEBUG=true && electron . --inspect=5858",
     "test": "pwsh -ExecutionPolicy Bypass -File ./tests/run-tests.ps1",
     "test:js": "jest tests/js/",

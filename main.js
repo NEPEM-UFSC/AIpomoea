@@ -55,11 +55,13 @@ function ensureUserDataDirsExist() {
 
 logger.level = 'info';
 
-// Corrigir verificação de debug - verificar múltiplas variáveis
+// Corrigir verificação de debug - verificar múltiplas variáveis e flags parciais
 const DEBUG = process.env.DEBUG === 'true' || 
               process.env.debug === 'true' || 
-              process.argv.includes('--debug') ||
-              process.argv.includes('--inspect');
+              process.argv.some(arg => arg.includes('--debug') || arg.includes('--inspect'));
+
+const UI_ONLY = process.env.UI_ONLY === 'true' ||
+                process.argv.includes('--ui-only');
 
 if (DEBUG) {
   logger.level = 'debug';
@@ -67,6 +69,11 @@ if (DEBUG) {
   console.log('🔧 Debug mode enabled');
 } else {
   console.log('▶️ Starting AIpomoea in production mode');
+}
+
+if (UI_ONLY) {
+  console.log('🎨 UI-ONLY mode enabled: Skipping backend initialization');
+  logger.log({ level: 'info', message: 'Modo UI-ONLY ativado. Pulando inicialização do backend.' });
 }
 
 const appVersion = app.getVersion();
@@ -96,8 +103,10 @@ if (fs.existsSync(configPath)) {
     return error;
   }
 }
-logger.log({ level: 'info', message: 'Detectando modelos...' });
-loadModels();
+if (!UI_ONLY) {
+  logger.log({ level: 'info', message: 'Detectando modelos...' });
+  loadModels();
+}
 
 logger.log({ level: 'info', message: `AIpomoea - V: ${  appVersion  }-${  microversion}` });
 logger.log({ level: 'info', message: 'Executando...'})
@@ -343,6 +352,11 @@ function createWindow () {
 }
 
 app.whenReady().then(async () => {
+  if (UI_ONLY) {
+    createWindow();
+    return;
+  }
+
   envManager = new PythonEnvManager();
   const setupSuccess = await envManager.checkAndSetupVenv();
   
