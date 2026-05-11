@@ -24,7 +24,9 @@ const validChannels = [
   'check-models-info',
   'models-info-response',
   'open-db-file-dialog',
-  'selected-db-file'
+  'selected-db-file',
+  'create-project',
+  'get-projects'
 ];
 
 // Expor APIs seguras para o renderer
@@ -35,7 +37,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.send(channel, data);
     }
   },
-  
+
   // NOVO: Suporte para ipcRenderer.invoke (comunicação assíncrona)
   invoke: (channel, data) => {
     if (validChannels.includes(channel)) {
@@ -43,13 +45,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
     return Promise.reject(new Error(`Canal inválido: ${channel}`));
   },
-  
+
   on: (channel, callback) => {
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, callback);
     }
   },
-  
+
   removeListener: (channel, callback) => {
     if (validChannels.includes(channel)) {
       ipcRenderer.removeListener(channel, callback);
@@ -60,11 +62,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   logMessage: (level, message) => {
     ipcRenderer.send('log-message', level, message);
   },
-  
+
   requestVersion: () => {
     ipcRenderer.send('request-version');
   },
-  
+
   // LEGADO: Mantido para compatibilidade
   uploadImages: (filePaths) => {
     ipcRenderer.send('upload-image', filePaths);
@@ -83,20 +85,20 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
       ipcRenderer.send(channel, data);
     }
   },
-  
+
   invoke: (channel, data) => {
     if (validChannels.includes(channel)) {
       return ipcRenderer.invoke(channel, data);
     }
     return Promise.reject(new Error(`Canal inválido: ${channel}`));
   },
-  
+
   on: (channel, callback) => {
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, callback);
     }
   },
-  
+
   removeListener: (channel, callback) => {
     if (validChannels.includes(channel)) {
       ipcRenderer.removeListener(channel, callback);

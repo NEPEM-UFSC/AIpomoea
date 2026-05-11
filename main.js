@@ -6,6 +6,48 @@ const { ipcMain } = require('electron');
 const childProcess = require('child_process');
 const PythonEnvManager = require('./PythonEnvManager');
 const logger = require('./logger');
+const sqlite3 = require('sqlite3').verbose();
+
+// ============================================================================
+// Database Initialization
+// ============================================================================
+const dbPath = path.join(USER_DATA_PATH, 'alpomoea_data.sqlite');
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    logger.log({ level: 'error', message: `Erro ao abrir banco de dados: ${err.message}` });
+  } else {
+    logger.log({ level: 'info', message: 'Conectado ao banco de dados SQLite.' });
+    initializeDatabase();
+  }
+});
+
+function initializeDatabase() {
+  db.serialize(() => {
+    // Tabela de Projetos
+    db.run(`
+            CREATE TABLE IF NOT EXISTS projetos (
+                id_projeto INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                dimensoes_json TEXT NOT NULL, -- Vai guardar ex: '["Genótipo", "Safra", "Tratamento"]'
+                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+    // Tabela de Amostras
+    db.run(`
+            CREATE TABLE IF NOT EXISTS amostras (
+                id_amostra INTEGER PRIMARY KEY AUTOINCREMENT,
+                id_projeto INTEGER NOT NULL,
+                tipo_analise TEXT NOT NULL, -- 'folha' ou 'raiz'
+                caminho_absoluto TEXT NOT NULL,
+                caminho_thumbnail TEXT,
+                metadados_json TEXT, -- JSON dinâmico
+                resultados_json TEXT, -- JSON de resultados
+                FOREIGN KEY (id_projeto) REFERENCES projetos(id_projeto) ON DELETE CASCADE
+            )
+        `);
+  });
+}
 
 // ============================================================================
 // SPEC 1 & 3: Configuração de Caminhos de Dados do Usuário
@@ -14,23 +56,23 @@ const logger = require('./logger');
 const isDev = !app.isPackaged;
 
 const MODELS_PATH = isDev
-    ? path.join(__dirname, 'models')
-    : path.join(process.resourcesPath, 'models');
+  ? path.join(__dirname, 'models')
+  : path.join(process.resourcesPath, 'models');
 
 const USER_DATA_PATH = app.getPath('userData');
 
 let envManager;
 
 const PATHS = {
-    UPLOADS_DIR: path.join(USER_DATA_PATH, 'uploads'),
-    RESULTS_DIR: path.join(USER_DATA_PATH, 'results'),
-    LOGS_DIR: path.join(USER_DATA_PATH, 'logs'),
-    SESSION_FILE: path.join(USER_DATA_PATH, 'session.json'),
-    CONFIG_FILE: path.join(USER_DATA_PATH, 'config.json'),
-    RECIPE_FILE: path.join(USER_DATA_PATH, 'recipe.json'),
-    CUSTOM_PRELOADING_FILE: path.join(USER_DATA_PATH, 'custom_preloading.json'),
-    MODELS_JSON_FILE: path.join(USER_DATA_PATH, 'models.json'),
-    OLD_SESSION_FILE: path.join(USER_DATA_PATH, 'session.aipomoea')
+  UPLOADS_DIR: path.join(USER_DATA_PATH, 'uploads'),
+  RESULTS_DIR: path.join(USER_DATA_PATH, 'results'),
+  LOGS_DIR: path.join(USER_DATA_PATH, 'logs'),
+  SESSION_FILE: path.join(USER_DATA_PATH, 'session.json'),
+  CONFIG_FILE: path.join(USER_DATA_PATH, 'config.json'),
+  RECIPE_FILE: path.join(USER_DATA_PATH, 'recipe.json'),
+  CUSTOM_PRELOADING_FILE: path.join(USER_DATA_PATH, 'custom_preloading.json'),
+  MODELS_JSON_FILE: path.join(USER_DATA_PATH, 'models.json'),
+  OLD_SESSION_FILE: path.join(USER_DATA_PATH, 'session.aipomoea')
 };
 
 const configPath = PATHS.CONFIG_FILE;
@@ -56,12 +98,12 @@ function ensureUserDataDirsExist() {
 logger.level = 'info';
 
 // Corrigir verificação de debug - verificar múltiplas variáveis e flags parciais
-const DEBUG = process.env.DEBUG === 'true' || 
-              process.env.debug === 'true' || 
-              process.argv.some(arg => arg.includes('--debug') || arg.includes('--inspect'));
+const DEBUG = process.env.DEBUG === 'true' ||
+  process.env.debug === 'true' ||
+  process.argv.some(arg => arg.includes('--debug') || arg.includes('--inspect'));
 
 const UI_ONLY = process.env.UI_ONLY === 'true' ||
-                process.argv.includes('--ui-only');
+  process.argv.includes('--ui-only');
 
 if (DEBUG) {
   logger.level = 'debug';
@@ -96,7 +138,7 @@ if (fs.existsSync(configPath)) {
   while (!fs.existsSync(configPath) && retries < maxRetries) {
     logger.log({ level: 'error', message: 'Arquivo de configuracao nao encontrado.' });
     CreateConfig();
-    retries+=1;
+    retries += 1;
   }
   if (!fs.existsSync(configPath)) {
     logger.log({ level: 'error', message: 'Falha ao criar o arquivo de configuracao.' });
@@ -108,8 +150,8 @@ if (!UI_ONLY) {
   loadModels();
 }
 
-logger.log({ level: 'info', message: `AIpomoea - V: ${  appVersion  }-${  microversion}` });
-logger.log({ level: 'info', message: 'Executando...'})
+logger.log({ level: 'info', message: `AIpomoea - V: ${appVersion}-${microversion}` });
+logger.log({ level: 'info', message: 'Executando...' })
 if (fs.existsSync(PATHS.OLD_SESSION_FILE)) {
   logger.log({ level: 'info', message: 'Arquivo de sessao anterior encontrado.' });
   var firstSession = false
@@ -139,13 +181,13 @@ function CreateSessionFile() {
     session: Date.now(),
     version: `${appVersion}-${microversion}`
   };
-  
+
   // Garantir que o diretório userData existe
   const userDataDir = path.dirname(sessionPath);
   if (!fs.existsSync(userDataDir)) {
     fs.mkdirSync(userDataDir, { recursive: true });
   }
-  
+
   fs.writeFileSync(sessionPath, JSON.stringify(sessionData, null, 2), 'utf8');
   logger.log({ level: 'info', message: 'Arquivo de sessao criado com sucesso.' });
   logger.log({ level: 'debug', message: `Dados da sessao: ${JSON.stringify(sessionData)}` });
@@ -164,15 +206,15 @@ function CreateConfig() {
     "DB_PATH": "",
     "DB_NAME": "aipomoea"
   };
-  
+
   // Garantir que o diretório userData existe
   const userDataDir = path.dirname(configPath);
   if (!fs.existsSync(userDataDir)) {
     fs.mkdirSync(userDataDir, { recursive: true });
   }
-  
+
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf8');
-  logger.log({ level: 'info', message: 'Arquivo de configuracao criado com valores padrao.' });  
+  logger.log({ level: 'info', message: 'Arquivo de configuracao criado com valores padrao.' });
 }
 
 /**
@@ -181,7 +223,7 @@ function CreateConfig() {
  * @param {boolean} [response=false] - Whether to return the configuration object or not.
  * @returns {Object|null} - The parsed configuration object if `response` is `true`, otherwise `null`.
  */
-function readConfig(response=false) {
+function readConfig(response = false) {
   try {
     logger.log({ level: 'info', message: 'Lendo arquivo de configuracao.' });
     const configData = fs.readFileSync(configPath, 'utf8');
@@ -191,18 +233,18 @@ function readConfig(response=false) {
       const output_standart = config.OUTPUT_STANDART;
       const naming_convention = config.NAMING_CONVENTION;
       const enable_naming_separation = config.ENABLE_NAMING_SEPARATION;
-      const force_maxperfomance =  config.FORCE_MAXPERFORMANCE;
+      const force_maxperfomance = config.FORCE_MAXPERFORMANCE;
       const enable_db = config.ENABLE_DB;
       const db_path = config.DB_PATH;
       const db_name = config.DB_NAME;
       logger.log({ level: 'info', message: 'Arquivo de configuracao lido com sucesso.' });
-      logger.log({ level: 'debug', message: `Configuracoes: ${  JSON.stringify(config)}` });
+      logger.log({ level: 'debug', message: `Configuracoes: ${JSON.stringify(config)}` });
       if (response) {
         return config;
       }
     } else {
-    logger.log({ level: 'error', message: 'Arquivo Config nao esta disponivel ou nao foi encontrado.' });
-    return error;
+      logger.log({ level: 'error', message: 'Arquivo Config nao esta disponivel ou nao foi encontrado.' });
+      return error;
     }
   } catch (error) {
     logger.log({ level: 'error', message: `Erro ao tentar ler o arquivo de configuracao: ${error}` });
@@ -217,78 +259,78 @@ function readConfig(response=false) {
 function loadModels() {
   logger.log({ level: 'info', message: 'realizando models_check "MODELSINFO" ' });
   const models = {
-      root: [],
-      leaves: [],
-      details: {}
+    root: [],
+    leaves: [],
+    details: {}
   };
 
   try {
-      fs.readdir(MODELS_PATH, (err, files) => {
-          if (err) {
-              logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
-              return;
-          }
-          const exeFiles = files.filter(file => file.endsWith('.exe'));
+    fs.readdir(MODELS_PATH, (err, files) => {
+      if (err) {
+        logger.log({ level: 'error', message: `Erro ao tentar ler o diretório de modelos: ${err}` });
+        return;
+      }
+      const exeFiles = files.filter(file => file.endsWith('.exe'));
 
-          exeFiles.forEach((file) => {
-              const modelName = file.replace('.exe', '');
-              if (modelName.startsWith('root_')) {
-                  models.root.push(modelName);
-              } else if (modelName.startsWith('leaves_')) {
-                  models.leaves.push(modelName);
-              }
-          });
-
-          const modelsJsonPath = path.join(USER_DATA_PATH, 'models.json');
-          fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
-          logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
-
-          exeFiles.forEach((file) => {
-              const filePath = path.join(MODELS_PATH, file);
-              const basename = path.basename(file, '.exe');
-
-              execFile(filePath, ['--info'], (error, stdout) => {
-                  if (error) {
-                      logger.log({ level: 'error', message: `Erro ao processar ${basename}: ${error.message}` });
-                      return;
-                  }
-
-              // Sanitização aprimorada do stdout
-              const sanitizedOutput = stdout
-                .split('*')                              // Divide pelo delimitador '*'
-                .map(info => info.replace(/\*/g, '').trim()) // Remove todos os '*' e espaços
-                .filter(info => info);  
-
-              if (sanitizedOutput[0] === '') {
-                    sanitizedOutput.shift();  // Remove o primeiro elemento
-              }
-                
-              // Definimos variáveis apenas se houver um número esperado de campos
-              if (sanitizedOutput.length >= 5) {
-                  const [model_name, arc_name, arc_version, dataset, bin_eval_name] = sanitizedOutput;
-
-                  models.details[basename] = {
-                      model_name: model_name || "Desconhecido",
-                      arc_name: arc_name || "N/D",
-                      arc_version: arc_version || "N/D",
-                      dataset: dataset || "N/D",
-                      bin_eval_name: bin_eval_name || "N/D"
-                  };
-
-                  try {
-                      fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
-                      logger.log({ level: 'info', message: `Detalhes de ${basename} adicionados ao models.json` });
-                  } catch (writeErr) {
-                      logger.log({ level: 'error', message: `Erro ao tentar atualizar models.json: ${writeErr}` });
-                  }
-              } else {
-                  logger.log({ level: 'warn', message: `Formato de saída inesperado para ${basename}, dados ignorados.` });
-              }
-              });
-          });
+      exeFiles.forEach((file) => {
+        const modelName = file.replace('.exe', '');
+        if (modelName.startsWith('root_')) {
+          models.root.push(modelName);
+        } else if (modelName.startsWith('leaves_')) {
+          models.leaves.push(modelName);
+        }
       });
+
+      const modelsJsonPath = path.join(USER_DATA_PATH, 'models.json');
+      fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+      logger.log({ level: 'info', message: 'Modelos carregados e indexados em models.json' });
+
+      exeFiles.forEach((file) => {
+        const filePath = path.join(MODELS_PATH, file);
+        const basename = path.basename(file, '.exe');
+
+        execFile(filePath, ['--info'], (error, stdout) => {
+          if (error) {
+            logger.log({ level: 'error', message: `Erro ao processar ${basename}: ${error.message}` });
+            return;
+          }
+
+          // Sanitização aprimorada do stdout
+          const sanitizedOutput = stdout
+            .split('*')                              // Divide pelo delimitador '*'
+            .map(info => info.replace(/\*/g, '').trim()) // Remove todos os '*' e espaços
+            .filter(info => info);
+
+          if (sanitizedOutput[0] === '') {
+            sanitizedOutput.shift();  // Remove o primeiro elemento
+          }
+
+          // Definimos variáveis apenas se houver um número esperado de campos
+          if (sanitizedOutput.length >= 5) {
+            const [model_name, arc_name, arc_version, dataset, bin_eval_name] = sanitizedOutput;
+
+            models.details[basename] = {
+              model_name: model_name || "Desconhecido",
+              arc_name: arc_name || "N/D",
+              arc_version: arc_version || "N/D",
+              dataset: dataset || "N/D",
+              bin_eval_name: bin_eval_name || "N/D"
+            };
+
+            try {
+              fs.writeFileSync(modelsJsonPath, JSON.stringify(models, null, 2), 'utf8');
+              logger.log({ level: 'info', message: `Detalhes de ${basename} adicionados ao models.json` });
+            } catch (writeErr) {
+              logger.log({ level: 'error', message: `Erro ao tentar atualizar models.json: ${writeErr}` });
+            }
+          } else {
+            logger.log({ level: 'warn', message: `Formato de saída inesperado para ${basename}, dados ignorados.` });
+          }
+        });
+      });
+    });
   } catch (err) {
-      logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
+    logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
   }
 }
 
@@ -297,10 +339,10 @@ function loadModels() {
  * @function createWindow
  * @returns {void}
  */
-function createWindow () {
+function createWindow() {
   logger.log({ level: 'info', message: 'Criando janela principal.' });
   console.log('🪟 Creating main window...');
-  
+
   mainWindow = new BrowserWindow({
     resizable: true,
     width: 1100,
@@ -313,10 +355,10 @@ function createWindow () {
       enableRemoteModule: false
     }
   })
-  
+
   mainWindow.maximize();
   readConfig();
-  
+
   if (firstSession) {
     console.log('👋 First session detected, loading welcome screen');
     mainWindow.loadFile('views/first_time.html')
@@ -324,13 +366,13 @@ function createWindow () {
     console.log('🏠 Loading main interface');
     mainWindow.loadFile('views/index.html')
   }
-  
+
   logger.log({ level: 'info', message: 'Janela principal criada com sucesso.' });
   mainWindow.setMenuBarVisibility(false)
-  
-  if (DEBUG) { 
+
+  if (DEBUG) {
     console.log('🔍 Opening DevTools in debug mode');
-    mainWindow.webContents.openDevTools(); 
+    mainWindow.webContents.openDevTools();
     mainWindow.setMenuBarVisibility(true);
   }
 
@@ -359,7 +401,7 @@ app.whenReady().then(async () => {
 
   envManager = new PythonEnvManager();
   const setupSuccess = await envManager.checkAndSetupVenv();
-  
+
   if (!setupSuccess) {
     dialog.showErrorBox(
       'Erro Crítico',
@@ -368,15 +410,15 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
-  
+
   createWindow();
 });
 
 app.on('activate', () => {
   logger.log({ level: 'info', message: 'Ativando janela principal.' });
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-  
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})
+
 app.on('window-all-closed', () => {
   logger.log({ level: 'info', message: 'Fechando janela principal.' });
 
@@ -385,45 +427,45 @@ app.on('window-all-closed', () => {
     const customPreloadingFilePath = PATHS.CUSTOM_PRELOADING_FILE;
     const modelsJsonPath = PATHS.MODELS_JSON_FILE;
 
-  [recipeFilePath, customPreloadingFilePath, modelsJsonPath].forEach((filePath) => {
-    if (fs.existsSync(filePath)) {
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          logger.log({ level: 'error', message: `Erro ao excluir o arquivo: ${err}` });
-          return;
-        }
-        logger.log({ level: 'info', message: `Arquivo excluido com sucesso: ${filePath}` });
-      });
-    } else {
-      logger.log({ level: 'info', message: `Arquivo nao encontrado: ${filePath}` });
-    }
-  });
-
-  fs.readdir(PATHS.UPLOADS_DIR, (err, files) => {
-    if (err) {
-      logger.log({ level: 'error', message: `Erro ao ler o diretorio: ${err}` });
-      return;
-    }
-
-    files.forEach((file) => {
-      const uploadFilePath = path.join(PATHS.UPLOADS_DIR, file);
-      if (fs.existsSync(uploadFilePath)) {
-        fs.unlink(uploadFilePath, (err) => {
+    [recipeFilePath, customPreloadingFilePath, modelsJsonPath].forEach((filePath) => {
+      if (fs.existsSync(filePath)) {
+        fs.unlink(filePath, (err) => {
           if (err) {
             logger.log({ level: 'error', message: `Erro ao excluir o arquivo: ${err}` });
             return;
           }
-          logger.log({ level: 'info', message: `Arquivo excluido com sucesso: ${uploadFilePath}` });
+          logger.log({ level: 'info', message: `Arquivo excluido com sucesso: ${filePath}` });
         });
       } else {
-        logger.log({ level: 'info', message: `Arquivo nao encontrado: ${uploadFilePath}` });
+        logger.log({ level: 'info', message: `Arquivo nao encontrado: ${filePath}` });
       }
     });
-  });
-} catch (err) {
-  logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
-}
-app.quit();
+
+    fs.readdir(PATHS.UPLOADS_DIR, (err, files) => {
+      if (err) {
+        logger.log({ level: 'error', message: `Erro ao ler o diretorio: ${err}` });
+        return;
+      }
+
+      files.forEach((file) => {
+        const uploadFilePath = path.join(PATHS.UPLOADS_DIR, file);
+        if (fs.existsSync(uploadFilePath)) {
+          fs.unlink(uploadFilePath, (err) => {
+            if (err) {
+              logger.log({ level: 'error', message: `Erro ao excluir o arquivo: ${err}` });
+              return;
+            }
+            logger.log({ level: 'info', message: `Arquivo excluido com sucesso: ${uploadFilePath}` });
+          });
+        } else {
+          logger.log({ level: 'info', message: `Arquivo nao encontrado: ${uploadFilePath}` });
+        }
+      });
+    });
+  } catch (err) {
+    logger.log({ level: 'error', message: `Erro inesperado: ${err}` });
+  }
+  app.quit();
 });
 
 /**
@@ -457,11 +499,11 @@ function removeUploadedFiles() {
       }
     });
   });
-} 
+}
 
 // Configura um listener para o evento 'log-message' emitido do processo renderer.
 ipcMain.on('log-message', (event, level, message) => {
-    logger.log({ level, message });
+  logger.log({ level, message });
 });
 
 // Configura um listener para o evento 'request-version' emitido do processo renderer.
@@ -476,29 +518,29 @@ ipcMain.on('request-version', (event) => {
 ipcMain.handle('upload-images', async (event, filePaths) => {
   logger.log({ level: 'info', message: 'Recebendo imagens.' });
   logger.log({ level: 'debug', message: `Caminhos dos arquivos: ${filePaths}` });
-  
+
   const copiedFiles = [];
-  
+
   if (!Array.isArray(filePaths) || filePaths.length === 0) {
     logger.log({ level: 'error', message: 'Nenhuma imagem selecionada.' });
     throw new Error('Nenhum caminho de arquivo fornecido');
   }
-  
+
   try {
     for (const originalPath of filePaths) {
       if (typeof originalPath === 'string') {
         const filename = path.basename(originalPath);
         const savePath = path.join(PATHS.UPLOADS_DIR, filename);
-        
+
         await fs.promises.copyFile(originalPath, savePath);
         copiedFiles.push(filename);
-        
+
         logger.log({ level: 'info', message: `Imagem salva com sucesso: ${savePath}` });
       } else {
         logger.log({ level: 'error', message: 'Caminho do arquivo inválido: não é uma string.' });
       }
     }
-    
+
     return { success: true, files: copiedFiles };
   } catch (error) {
     logger.log({ level: 'error', message: `Erro ao fazer upload de imagens: ${error}` });
@@ -510,12 +552,12 @@ ipcMain.handle('upload-images', async (event, filePaths) => {
 ipcMain.on('upload-image', (event, filePaths) => {
   logger.log({ level: 'info', message: 'Recebendo imagem.' });
   logger.log({ level: 'debug', message: `Caminhos dos arquivos: ${filePaths}` });
-  
+
   const uploadDir = uploadsPath;
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
-  
+
   if (filePaths.length === 0) {
     logger.log({ level: 'error', message: 'Nenhuma imagem selecionada.' });
     throw new Error('Nenhum caminho passado');
@@ -526,17 +568,17 @@ ipcMain.on('upload-image', (event, filePaths) => {
         if (typeof originalPath === 'string') {
           const filename = path.basename(originalPath);
           const savePath = path.join(PATHS.UPLOADS_DIR, filename);
-  
+
           fs.copyFile(originalPath, savePath, (err) => {
             if (err) {
               logger.log({ level: 'error', message: `Erro ao salvar a imagem: ${err}` });
-              
+
               event.sender.send('upload-image-response', 'Erro ao fazer upload da imagem.');
               return;
             }
-            
+
             logger.log({ level: 'info', message: `Imagem salva com sucesso: ${savePath}` });
-            
+
             event.sender.send('upload-image-response', 'Imagem enviada com sucesso!');
           });
         } else {
@@ -553,39 +595,39 @@ ipcMain.on('upload-image', (event, filePaths) => {
 
 ipcMain.handle('execute-pipeline', async (event, { typemode, checkboxStates, uploadedFileNames }) => {
   logger.log({ level: 'info', message: 'Executando pipeline...' });
-  
+
   try {
     const commandPayload = {
       typemode: typemode,
       commands: checkboxStates,
-      
+
       config: readConfig(true),
-      
+
       files_to_process: uploadedFileNames,
-      
+
       paths: {
         models_dir: MODELS_PATH,
         uploads_dir: PATHS.UPLOADS_DIR,
         results_dir: PATHS.RESULTS_DIR
       }
     };
-    
+
     const commandString = JSON.stringify(commandPayload);
-    
+
     logger.log({ level: 'debug', message: `Comando serializado: ${commandString}` });
-    
+
     return new Promise((resolve, reject) => {
       const pythonProcess = childProcess.spawn(envManager.venvPythonPath, [path.join(envManager.srcPath, 'main.py')]);
-      
+
       let stdoutBuffer = '';
       pythonProcess.stdout.on('data', (data) => {
         stdoutBuffer += data.toString();
         let boundary = stdoutBuffer.indexOf('\n');
-        
+
         while (boundary !== -1) {
           const jsonLine = stdoutBuffer.substring(0, boundary);
           stdoutBuffer = stdoutBuffer.substring(boundary + 1);
-          
+
           try {
             const message = JSON.parse(jsonLine);
             if (mainWindow && mainWindow.webContents) {
@@ -598,7 +640,7 @@ ipcMain.handle('execute-pipeline', async (event, { typemode, checkboxStates, upl
           boundary = stdoutBuffer.indexOf('\n');
         }
       });
-      
+
       let stderrBuffer = '';
       pythonProcess.stderr.on('data', (data) => {
         stderrBuffer += data.toString();
@@ -611,7 +653,7 @@ ipcMain.handle('execute-pipeline', async (event, { typemode, checkboxStates, upl
         }
         logger.log({ level: 'error', message: `Stderr do Python: ${data.toString()}` });
       });
-      
+
       pythonProcess.on('close', (code) => {
         if (code === 0) {
           logger.log({ level: 'info', message: 'Processo Python finalizado com sucesso.' });
@@ -622,10 +664,10 @@ ipcMain.handle('execute-pipeline', async (event, { typemode, checkboxStates, upl
           reject(new Error(errorMsg));
         }
       });
-      
+
       pythonProcess.stdin.write(commandString);
       pythonProcess.stdin.end();
-      
+
       logger.log({ level: 'info', message: 'Comando enviado para o processo Python.' });
     });
   } catch (error) {
@@ -692,7 +734,7 @@ ipcMain.on('receive_commands', (event, { typemode, checkboxStates }) => {
     typemode,
     checkboxStates
   };
-  
+
   logger.log({ level: 'info', message: 'Recebendo comandos.' });
   const filePath = PATHS.RECIPE_FILE;
   fs.writeFile(filePath, JSON.stringify(data, null, 2), (err) => {
@@ -700,7 +742,7 @@ ipcMain.on('receive_commands', (event, { typemode, checkboxStates }) => {
       logger.log({ level: 'error', message: `Erro ao salvar arquivo JSON: ${err}` });
       return;
     }
-    
+
     logger.log({ level: 'info', message: 'Arquivo JSON salvo com sucesso.' });
     logger.log({ level: 'debug', message: `COMANDOS: ${JSON.stringify(data)}` });
     ipcMain.emit('run-factory');
@@ -711,7 +753,7 @@ ipcMain.on('receive_commands', (event, { typemode, checkboxStates }) => {
 ipcMain.on('read-config', () => {
   const config = readConfig(true);
   logger.log({ level: 'debug', message: `Configuracoes: ${JSON.stringify(config)}` });
-  
+
   mainWindow.webContents.send('config-response', config);
 });
 
@@ -746,8 +788,8 @@ ipcMain.on('request-naming', (event) => {
     enableNamingSeparation: config.ENABLE_NAMING_SEPARATION,
     namingConvention: config.NAMING_CONVENTION
   });
-    logger.log({ level: 'debug', message: `Separacao de nomes ativada: ${config.ENABLE_NAMING_SEPARATION}` });
-    logger.log({ level: 'debug', message: `Convencao de nomes: ${config.NAMING_CONVENTION}` });
+  logger.log({ level: 'debug', message: `Separacao de nomes ativada: ${config.ENABLE_NAMING_SEPARATION}` });
+  logger.log({ level: 'debug', message: `Convencao de nomes: ${config.NAMING_CONVENTION}` });
 });
 
 // Ouvinte do evento 'request-phenotype' do ipcMain
@@ -757,17 +799,51 @@ ipcMain.on('receive-custom', (event, customData) => {
   if (!customData) {
     logger.log({ level: 'error', message: 'Dados personalizados nao fornecidos.' });
     return;
-} 
+  }
   const customJson = JSON.stringify(customData, null, 2);
   logger.log({ level: 'info', message: `Dados personalizados: ${customJson}` });
   const customPath = PATHS.CUSTOM_PRELOADING_FILE;
 
   fs.writeFile(customPath, customJson, (err) => {
+    if (err) {
+      logger.log({ level: 'error', message: `Erro ao salvar arquivo JSON personalizado: ${err}` });
+      return;
+    }
+    logger.log({ level: 'info', message: 'Arquivo JSON personalizado salvo com sucesso.' });
+  });
+});
+
+// ============================================================================
+// Project Management IPC Handlers
+// ============================================================================
+ipcMain.handle('create-project', async (event, projectData) => {
+  const { nome, dimensoes } = projectData;
+  const dimensoesJson = JSON.stringify(dimensoes);
+
+  return new Promise((resolve, reject) => {
+    const sql = `INSERT INTO projetos (nome, dimensoes_json) VALUES (?, ?)`;
+    db.run(sql, [nome, dimensoesJson], function (err) {
       if (err) {
-          logger.log({ level: 'error', message: `Erro ao salvar arquivo JSON personalizado: ${err}` });
-          return;
+        logger.log({ level: 'error', message: `Erro ao criar projeto: ${err.message}` });
+        reject(err);
+      } else {
+        logger.log({ level: 'info', message: `Projeto criado com sucesso. ID: ${this.lastID}` });
+        resolve({ success: true, id: this.lastID });
       }
-      logger.log({ level: 'info', message: 'Arquivo JSON personalizado salvo com sucesso.' });
+    });
+  });
+});
+
+ipcMain.handle('get-projects', async (event) => {
+  return new Promise((resolve, reject) => {
+    db.all("SELECT * FROM projetos ORDER BY data_criacao DESC", [], (err, rows) => {
+      if (err) {
+        logger.log({ level: 'error', message: `Erro ao buscar projetos: ${err.message}` });
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
   });
 });
 
@@ -776,19 +852,19 @@ ipcMain.on('check-models-info', (event) => {
   const modelsJsonPath = PATHS.MODELS_JSON_FILE;
 
   fs.readFile(modelsJsonPath, 'utf8', (err, data) => {
-      if (err) {
-          logger.log({ level: 'error', message: `Erro ao ler models.json: ${err}` });
-          event.sender.send('models-info-response', { error: 'Erro ao ler models.json' });
-          return;
-      }
+    if (err) {
+      logger.log({ level: 'error', message: `Erro ao ler models.json: ${err}` });
+      event.sender.send('models-info-response', { error: 'Erro ao ler models.json' });
+      return;
+    }
 
-      try {
-          const models = JSON.parse(data);
-          event.sender.send('models-info-response', models);
-      } catch (parseErr) {
-          logger.log({ level: 'error', message: `Erro ao analisar models.json: ${parseErr}` });
-          event.sender.send('models-info-response', { error: 'Erro ao analisar models.json' });
-      }
+    try {
+      const models = JSON.parse(data);
+      event.sender.send('models-info-response', models);
+    } catch (parseErr) {
+      logger.log({ level: 'error', message: `Erro ao analisar models.json: ${parseErr}` });
+      event.sender.send('models-info-response', { error: 'Erro ao analisar models.json' });
+    }
   });
 });
 
@@ -796,29 +872,29 @@ ipcMain.on('open-db-file-dialog', (event) => {
   logger.log({ level: 'debug', message: 'open-db-file-dialog event received' });
 
   dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: [
-          { name: 'Databases', extensions: ['db'] }
-      ]
+    properties: ['openFile'],
+    filters: [
+      { name: 'Databases', extensions: ['db'] }
+    ]
   }).then(result => {
-      if (!result.canceled) {
-          logger.log({ level: 'debug', message: `File selected: ${result.filePaths[0]}` });
-          event.sender.send('selected-db-file', result.filePaths[0]);
-      } else {
-          logger.log({ level: 'debug', message: 'File selection canceled' });
-      }
+    if (!result.canceled) {
+      logger.log({ level: 'debug', message: `File selected: ${result.filePaths[0]}` });
+      event.sender.send('selected-db-file', result.filePaths[0]);
+    } else {
+      logger.log({ level: 'debug', message: 'File selection canceled' });
+    }
   }).catch(err => {
-      logger.log({ level: 'error', message: `Error during file selection: ${err}` });
+    logger.log({ level: 'error', message: `Error during file selection: ${err}` });
   });
 });
 
 ipcMain.handle('update-python-packages', async () => {
-    logger.log({ level: 'info', message: 'Iniciando atualização de pacotes Python...' });
-    try {
-        const result = await envManager.updatePackages();
-        return result;
-    } catch (error) {
-        logger.log({ level: 'error', message: `Erro ao atualizar pacotes Python: ${error}` });
-        return { status: 'error', message: error.message };
-    }
+  logger.log({ level: 'info', message: 'Iniciando atualização de pacotes Python...' });
+  try {
+    const result = await envManager.updatePackages();
+    return result;
+  } catch (error) {
+    logger.log({ level: 'error', message: `Erro ao atualizar pacotes Python: ${error}` });
+    return { status: 'error', message: error.message };
+  }
 });

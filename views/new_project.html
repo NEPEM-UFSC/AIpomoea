@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIpomoea - Novo Projeto</title>
+    <link rel="icon" href="../static/images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/animations.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-main: 'Inter', sans-serif;
+            --font-title: 'Outfit', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .novo-projeto-card {
+            width: 100%;
+            max-width: 600px;
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            font-family: var(--font-title);
+            color: var(--primary-purple);
+            margin-top: 0;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .form-group .dica {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        input[type="text"] {
+            padding: 14px 18px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: var(--font-main);
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-purple-light);
+            background: #fdfbff;
+        }
+
+        .dimensoes-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            animation: slideInLeft 0.3s ease-out;
+        }
+
+        .btn-remove {
+            background: #fff0f0;
+            border: none;
+            color: #f44336;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-remove:hover {
+            background: #fee;
+            transform: scale(1.05);
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-add {
+            background: transparent;
+            border: 2px dashed #ddd;
+            color: #777;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-add:hover {
+            border-color: var(--primary-purple-light);
+            color: var(--primary-purple);
+            background: #fdfbff;
+        }
+
+        .btn-save {
+            background: var(--primary-purple);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
+            transition: all 0.3s;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(111, 66, 193, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-back {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-back:hover {
+            background: #eee;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="top-container">
+            <nav style="animation: slideDown 0.7s;">
+                <ul>
+                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
+                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
+                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
+                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
+                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="novo-projeto-card">
+            <h2>Novo Projeto de Fenotipagem</h2>
+            
+            <div class="form-group">
+                <label for="nomeProjeto">Nome do Projeto</label>
+                <input type="text" id="nomeProjeto" placeholder="Ex: Avaliação Cultivares 2024 - Seca">
+            </div>
+
+            <div class="form-group">
+                <label>Variáveis do Experimento (Dimensões)</label>
+                <p class="dica">Quais metadados você vai avaliar? Ex: Genótipo, Tratamento, Repetição.</p>
+                
+                <div id="listaDimensoes" class="dimensoes-lista">
+                    <div class="input-wrapper">
+                        <input type="text" class="input-dimensao" placeholder="Ex: Genótipo" value="Genótipo">
+                    </div>
+                </div>
+                
+                <button id="btnAdicionarDimensao" class="btn-add">+ Adicionar Outra Variável</button>
+            </div>
+
+            <div class="actions">
+                <button id="btnSalvarProjeto" class="btn-save">Criar Projeto e Começar</button>
+                <a href="index.html" class="btn-back">Cancelar</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const btnAdd = document.getElementById('btnAdicionarDimensao');
+        const btnSave = document.getElementById('btnSalvarProjeto');
+        const lista = document.getElementById('listaDimensoes');
+
+        btnAdd.addEventListener('click', () => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'input-wrapper';
+            
+            const novoInput = document.createElement('input');
+            novoInput.type = 'text';
+            novoInput.className = 'input-dimensao';
+            novoInput.placeholder = 'Nova Variável (ex: Tratamento)';
+            
+            const btnRemove = document.createElement('button');
+            btnRemove.className = 'btn-remove';
+            btnRemove.innerHTML = '×';
+            btnRemove.onclick = () => wrapper.remove();
+            
+            wrapper.appendChild(novoInput);
+            wrapper.appendChild(btnRemove);
+            lista.appendChild(wrapper);
+            novoInput.focus();
+        });
+
+        btnSave.addEventListener('click', async () => {
+            const nome = document.getElementById('nomeProjeto').value.trim();
+            
+            const inputsDimensoes = document.querySelectorAll('.input-dimensao');
+            let dimensoes = [];
+            inputsDimensoes.forEach(input => {
+                if(input.value.trim() !== '') {
+                    dimensoes.push(input.value.trim());
+                }
+            });
+
+            if(!nome) {
+                alert("Por favor, dê um nome ao seu projeto.");
+                return;
+            }
+
+            if(dimensoes.length === 0) {
+                alert("Adicione pelo menos uma variável ao experimento.");
+                return;
+            }
+
+            const novoProjetoData = {
+                nome: nome,
+                dimensoes: dimensoes
+            };
+
+            try {
+                // IPC Invoke para o main process
+                const result = await window.electronAPI.invoke('create-project', novoProjetoData);
+                
+                if(result.success) {
+                    // Redireciona para a home ou para a tela de importação do projeto
+                    // Por enquanto, volta para a home
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error("Erro ao salvar projeto:", error);
+                alert("Erro ao salvar o projeto no banco de dados.");
+            }
+        });
+    </script>
+</body>
+</html>
