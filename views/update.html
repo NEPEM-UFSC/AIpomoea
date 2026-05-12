@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +17,7 @@
             gap: 10px;
             margin: 18px 0 18px 0;
         }
+
         .update {
             max-width: 600px;
             margin: 0 auto;
@@ -34,6 +36,7 @@
             font-size: 18px;
             font-weight: bold;
         }
+
         .update-container {
             text-align: center;
         }
@@ -75,26 +78,33 @@
         .hidden {
             display: none;
         }
+
         .span {
             font-size: 18px;
             font-weight: bold;
         }
+
         .pc {
             font-size: 18px;
             font-weight: bold;
         }
     </style>
 </head>
+
 <body>
     <header>
         <nav style="animation: slideDown 0.7s;">
             <ul>
-                <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
-                <li><a href="./projects.html"><img src="../static/images/models.svg" alt="Projetos" style="filter: invert(100%);"><span>Projetos</span></a></li>
-                <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
-                <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
-                <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
-                <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
+                <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio"><span>Home</span></a></li>
+                <li><a href="./projects.html"><img src="../static/images/models.svg"
+                            alt="Projetos"><span>Projetos</span></a></li>
+                <li><a href="./settings.html"><img src="../static/images/file-sliders.png"
+                            alt="Config"><span>Config</span></a></li>
+                <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda"><span>Ajuda</span></a>
+                </li>
+                <li><a href="./update.html"><img src="../static/images/cloud-download.png"
+                            alt="Atualizar"><span>Atualizar</span></a></li>
+                <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre"><span>Sobre</span></a></li>
             </ul>
         </nav>
     </header>
@@ -103,14 +113,15 @@
             <div id="loading-spinner" class="loading-spinner"></div>
             <img id="version-badge" alt="Status da Versão" class="badge hidden">
         </div>
-        <div class="version-container">    
-           <pc> Sua versão atual é <span id="app-version" class="version-text"></span> </pc>
+        <div class="version-container">
+            <pc> Sua versão atual é <span id="app-version" class="version-text"></span> </pc>
         </div>
         <div class="update-container">
             <p id="update-status" class="version-text">Verificando atualizações...</p>
-            <pc id="latest-version-pc" class="hidden">Uma nova versão <span id="latest-version" class="version-text"></span> está disponível.</pc>
+            <pc id="latest-version-pc" class="hidden">Uma nova versão <span id="latest-version"
+                    class="version-text"></span> está disponível.</pc>
         </div>
-        <div class="update-container">    
+        <div class="update-container">
             <button id="update-button" class="hidden update-button">Atualizar Agora</button>
             <p id="update-info" class="update-info hidden">Clique no botão acima para baixar a versão mais recente.</p>
         </div>
@@ -118,12 +129,13 @@
 </body>
 <script src="../static/js/version.js"></script>
 <script>
-try {
-window.onload = updateVersionBadge;
-} catch (error) {	
-console.error(error);
-loadingSpinner.style.display = "none";
-versionbadge.src = "../static/images/error.svg";
-}
+    try {
+        window.onload = updateVersionBadge;
+    } catch (error) {
+        console.error(error);
+        loadingSpinner.style.display = "none";
+        versionbadge.src = "../static/images/error.svg";
+    }
 </script>
+
 </html>

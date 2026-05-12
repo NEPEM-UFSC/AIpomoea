@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,95 +11,83 @@
     <link rel="stylesheet" type="text/css" href="../static/css/settings.css">
     <link rel="stylesheet" type="text/css" href="../static/css/popup.css">
     <style>
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+
         .save-config {
             display: flex;
             justify-content: center;
-            margin-top: 20px;
+            margin-top: 30px;
         }
 
-        .save-config button {
-            margin: 0 10px;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
+        .purple-button {
+            background: var(--primary-purple);
             color: white;
-            text-decoration: none;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(75, 0, 130, 0.2);
+        }
+
+        .purple-button:hover {
+            transform: translateY(-2px);
+            background: var(--primary-purple-light);
+            box-shadow: 0 6px 20px rgba(75, 0, 130, 0.3);
         }
 
         .settings-buttons {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 16px;
-            margin-top: 20px;
+            gap: 15px;
+            margin-top: 10px;
         }
 
-        .settings-buttons button {
-            margin: 0 10px;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            color: white;
-            text-decoration: none;
-        }
-
-        .purple-button {
-            text-decoration: none;
-            color: white;
-            font-weight: bold;
-            background-color: var(--primary--purple-color);
-            color: white;
-        }
-
-        .purple-button:hover {
-            background-color: var(--purple-hover-color);
-        }
-
-        .span-box {
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 12px;
-            background-color: var(--body-grey);
-            padding: 2px 4px;
-            border-radius: 4px;
-            border: 1px solid #d0d0d0;
-            color: #000;
-            display: inline-block;
-            margin-right: 8px;
-        }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.03);
         }
 
-        th, td {
-            padding: 10px;
+        th,
+        td {
+            padding: 15px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
         }
 
         th {
-            background-color: #f4f4f4;
+            background-color: #f8f9fa;
+            color: var(--primary-purple);
+            font-weight: 700;
         }
     </style>
 </head>
+
 <body>
     <header>
-        <div class="top-container">
-            <nav style="animation: slideDown 0.7s;">
-                <ul>
-                    <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio" style="filter: invert(100%);"><span>Home</span></a></li>
-                    <li><a href="./projects.html"><img src="../static/images/models.svg" alt="Projetos" style="filter: invert(100%);"><span>Projetos</span></a></li>
-                    <li><a href="./settings.html"><img src="../static/images/file-sliders.png" alt="Config" style="filter: invert(100%);"><span>Config</span></a></li>
-                    <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda" style="filter: invert(100%);"><span>Ajuda</span></a></li>
-                    <li><a href="./update.html"><img src="../static/images/cloud-download.png" alt="Atualizar" style="filter: invert(100%);"><span>Atualizar</span></a></li>
-                    <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre" style="filter: invert(100%);"><span>Sobre</span></a></li>
-                </ul>
-            </nav>
+        <nav style="animation: slideDown 0.7s;">
+            <ul>
+                <li><a href="./index.html"><img src="../static/images/home.svg" alt="Inicio"><span>Home</span></a></li>
+                <li><a href="./projects.html"><img src="../static/images/models.svg"
+                            alt="Projetos"><span>Projetos</span></a></li>
+                <li><a href="./settings.html"><img src="../static/images/file-sliders.png"
+                            alt="Config"><span>Config</span></a></li>
+                <li><a href="./help.html"><img src="../static/images/circle-help.png" alt="Ajuda"><span>Ajuda</span></a>
+                </li>
+                <li><a href="./update.html"><img src="../static/images/cloud-download.png"
+                            alt="Atualizar"><span>Atualizar</span></a></li>
+                <li><a href="./about.html"><img src="../static/images/info.png" alt="Sobre"><span>Sobre</span></a></li>
+            </ul>
+        </nav>
     </header>
     <div class="settings-container">
         <h2>Configurações</h2>
@@ -146,20 +135,21 @@
         <div class="section">
             <h4>Configurações de Banco de dados</h4>
         </div>
-            <div class="setting">
-                <label for="database">Habilitar uso de Banco de dados SQLITE:</label>
-                <input type="checkbox" id="ENABLE_DB" name="ENABLE_DB">
-            </div>
-            <div class="setting" id="db-path-settings">
-                <label for="database-path">Caminho da Database:</label>
-                <span id="database-path" class="span-box"></span>
-                <input type="file" id="DB_PATH" name="DB_PATH" style="display: none;" accept=".db">
-                <button class="customDirSelect" id="select-database-button" onclick=openDBFileDialog()>Selecionar banco de dados</button>
-            </div>
-            <div class="setting" id="db-name-settings">
-                <label for="database-name">Nome da tabela no DB:</label>
-                <input type="text" id="DB_NAME" name="DB_NAME">
-            </div>
+        <div class="setting">
+            <label for="database">Habilitar uso de Banco de dados SQLITE:</label>
+            <input type="checkbox" id="ENABLE_DB" name="ENABLE_DB">
+        </div>
+        <div class="setting" id="db-path-settings">
+            <label for="database-path">Caminho da Database:</label>
+            <span id="database-path" class="span-box"></span>
+            <input type="file" id="DB_PATH" name="DB_PATH" style="display: none;" accept=".db">
+            <button class="customDirSelect" id="select-database-button" onclick=openDBFileDialog()>Selecionar banco de
+                dados</button>
+        </div>
+        <div class="setting" id="db-name-settings">
+            <label for="database-name">Nome da tabela no DB:</label>
+            <input type="text" id="DB_NAME" name="DB_NAME">
+        </div>
         <div class="save-config">
             <button class="purple-button" id="save-config" onclick=writeConfig()>Salvar configurações</button>
         </div>
@@ -228,27 +218,27 @@
                         <!-- Dados da tabela -->
                     </tbody>
                 </table>
-                
+
                 <button class="close-button" onclick="closePopup('models-info-popup')">Fechar</button>
             </div>
-        </div>        
+        </div>
     </div>
     <script src="../static/js/config-handler.js"></script>
-    <script src="../static/js/check-models.js"></script>  
+    <script src="../static/js/check-models.js"></script>
     <footer class="app-version" id="app-version">
         Versão:
     </footer>
 </body>
 <script src="../static/js/version.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         readConfig();
-        
+
         const enableDbCheckbox = document.getElementById('ENABLE_DB');
         const dbSettings = document.getElementById('db-path-settings');
         const dbNameSetting = document.getElementById('db-name-settings');
 
-        enableDbCheckbox.addEventListener('change', function() {
+        enableDbCheckbox.addEventListener('change', function () {
             if (enableDbCheckbox.checked) {
                 dbSettings.style.display = 'flex';
                 dbNameSetting.style.display = 'flex';
@@ -264,11 +254,11 @@
         const databasePathSpan = document.getElementById('database-path');
         const databasePathInput = document.getElementById('DB_PATH');
 
-        selectButton.addEventListener('click', function() {
+        selectButton.addEventListener('click', function () {
             outputDirInput.click();
         });
 
-        outputDirInput.addEventListener('change', function(event) {
+        outputDirInput.addEventListener('change', function (event) {
             const files = event.target.files;
             if (files.length > 0) {
                 const firstFilePath = files[0].path;
@@ -280,4 +270,5 @@
         });
     });
 </script>
+
 </html>

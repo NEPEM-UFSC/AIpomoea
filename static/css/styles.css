@@ -25,10 +25,11 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f0f0f0;
-    color: #333;
-    margin: 100px 0 0 0;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: var(--text-main);
+    margin: 0;
+    min-height: 100vh;
 }
 
 h1 {
@@ -100,14 +101,16 @@ a:hover {
 
 nav {
     width: fit-content;
-    padding: 0 20px;
+    padding: 8px 15px;
     margin: 0 auto;
-    background: rgba(75, 0, 130, 0.85);
-    backdrop-filter: blur(12px);
+    background: rgba(49, 0, 85, 0.9);
+    /* Dark Purple Glass */
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-top: none;
-    border-bottom-left-radius: 24px;
-    border-bottom-right-radius: 24px;
+    border-bottom-left-radius: 25px;
+    border-bottom-right-radius: 25px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -116,7 +119,8 @@ nav {
     left: 0;
     right: 0;
     z-index: 1000;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
 }
 
 nav ul {
@@ -126,55 +130,59 @@ nav ul {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100%;
-}
-
-nav ul li {
-    margin: 0 10px;
-}
-
-nav ul li a {
-    position: relative;
-    display: flex;
-    text-decoration: none;
-    color: white;
-    font-weight: 600;
-    padding: 12px 24px;
-    border-radius: 14px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    line-height: 1;
-    justify-content: center;
-    align-items: center;
     gap: 8px;
 }
 
+nav ul li a {
+    display: flex;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 18px;
+    font-size: 13px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    align-items: center;
+    gap: 0px;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 42px;
+}
+
 nav ul li a:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    max-width: 200px;
+    gap: 10px;
 }
 
 nav ul li a img {
-    display: block;
-    z-index: 1;
+    width: 20px;
+    height: 20px;
+    transition: all 0.3s;
+    flex-shrink: 0;
+    filter: brightness(0) invert(1) opacity(0.8);
+}
+
+nav ul li a:hover img {
+    filter: brightness(0) invert(1) opacity(1);
+    transform: scale(1.1);
 }
 
 nav ul li a span {
-    position: absolute;
-    color: white;
-    padding: 5px;
-    border-radius: 5px;
-    white-space: nowrap;
     opacity: 0;
-    transition: opacity 0.35s;
-    z-index: 2;
+    transition: opacity 0.2s ease-in-out;
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: 0.3px;
 }
 
 nav ul li a:hover span {
     opacity: 1;
 }
 
-nav ul li a:hover img {
-    opacity: 0;
+.nav-active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 .app-version {

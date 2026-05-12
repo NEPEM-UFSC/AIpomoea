@@ -58,15 +58,15 @@ function initializeDatabase() {
 }
 
 function startDatabase() {
-    const dbPath = path.join(USER_DATA_PATH, 'alpomoea_data.sqlite');
-    db = new sqlite3.Database(dbPath, (err) => {
-        if (err) {
-            logger.log({ level: 'error', message: `Erro ao abrir banco de dados: ${err.message}` });
-        } else {
-            logger.log({ level: 'info', message: 'Conectado ao banco de dados SQLite.' });
-            initializeDatabase();
-        }
-    });
+  const dbPath = path.join(USER_DATA_PATH, 'alpomoea_data.sqlite');
+  db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      logger.log({ level: 'error', message: `Erro ao abrir banco de dados: ${err.message}` });
+    } else {
+      logger.log({ level: 'info', message: 'Conectado ao banco de dados SQLite.' });
+      initializeDatabase();
+    }
+  });
 }
 
 
@@ -1038,49 +1038,53 @@ ipcMain.handle('export-project', async (event, idProjeto) => {
     db.all(`
       SELECT id_amostra, tipo_analise, caminho_absoluto, metadados_json, resultados_json 
       FROM amostras 
-      WHERE id_projeto = ? AND resultados_json IS NOT NULL`, 
-    [idProjeto], async (err, rows) => {
-      if (err) return resolve({ success: false, error: err.message });
-      if (rows.length === 0) return resolve({ success: false, error: "Nenhuma amostra processada encontrada para este projeto." });
+      WHERE id_projeto = ? AND resultados_json IS NOT NULL`,
+      [idProjeto], async (err, rows) => {
+        if (err) return resolve({ success: false, error: err.message });
+        if (rows.length === 0) return resolve({ success: false, error: "Nenhuma amostra processada encontrada para este projeto." });
 
-      let headersMeta = new Set();
-      let headersResult = new Set();
-      
-      const dados = rows.map(row => {
-        const meta = JSON.parse(row.metadados_json || '{}');
-        const res = JSON.parse(row.resultados_json || '{}');
-        Object.keys(meta).forEach(k => headersMeta.add(k));
-        Object.keys(res).forEach(k => headersResult.add(k));
-        return { ID: row.id_amostra, Tipo: row.tipo_analise, Caminho: row.caminho_absoluto, meta, res };
-      });
+        let headersMeta = new Set();
+        let headersResult = new Set();
 
-      const headers = ['ID', 'Tipo_Analise', 'Caminho_Arquivo', ...Array.from(headersMeta), ...Array.from(headersResult)];
-      let csv = '\uFEFF'; 
-      csv += headers.join(';') + '\n';
+        const dados = rows.map(row => {
+          const meta = JSON.parse(row.metadados_json || '{}');
+          const res = JSON.parse(row.resultados_json || '{}');
+          Object.keys(meta).forEach(k => headersMeta.add(k));
+          Object.keys(res).forEach(k => headersResult.add(k));
+          return { ID: row.id_amostra, Tipo: row.tipo_analise, Caminho: row.caminho_absoluto, meta, res };
+        });
 
-      dados.forEach(d => {
-        const row = [d.ID, d.Tipo, d.Caminho, ...Array.from(headersMeta).map(h => d.meta[h] || ''), ...Array.from(headersResult).map(h => d.res[h] || '')];
-        csv += row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';') + '\n';
-      });
+        const headers = ['ID', 'Tipo_Analise', 'Caminho_Arquivo', ...Array.from(headersMeta), ...Array.from(headersResult)];
+        let csv = '\uFEFF';
+        csv += headers.join(';') + '\n';
 
-      const { filePath } = await dialog.showSaveDialog({
-        title: 'Salvar Relatório AIpomoea',
-        defaultPath: `Relatorio_AIpomoea_Projeto_${idProjeto}.csv`,
-        filters: [{ name: 'Planilha CSV', extensions: ['csv'] }]
-      });
+        dados.forEach(d => {
+          const row = [d.ID, d.Tipo, d.Caminho, ...Array.from(headersMeta).map(h => d.meta[h] || ''), ...Array.from(headersResult).map(h => d.res[h] || '')];
+          csv += row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';') + '\n';
+        });
 
-      if (filePath) {
-        try {
-          fs.writeFileSync(filePath, csv, 'utf8');
-          resolve({ success: true, path: filePath });
-        } catch (fsErr) {
-          resolve({ success: false, error: fsErr.message });
+        const { filePath } = await dialog.showSaveDialog({
+          title: 'Salvar Relatório AIpomoea',
+          defaultPath: `Relatorio_AIpomoea_Projeto_${idProjeto}.csv`,
+          filters: [{ name: 'Planilha CSV', extensions: ['csv'] }]
+        });
+
+        if (filePath) {
+          try {
+            fs.writeFileSync(filePath, csv, 'utf8');
+            resolve({ success: true, path: filePath });
+          } catch (fsErr) {
+            resolve({ success: false, error: fsErr.message });
+          }
+        } else {
+          resolve({ success: false, error: "Operação cancelada pelo usuário." });
         }
-      } else {
-        resolve({ success: false, error: "Operação cancelada pelo usuário." });
-      }
-    });
+      });
   });
+});
+
+ipcMain.on('is-debug', (event) => {
+  event.returnValue = DEBUG;
 });
 
 // Ouvidor do evento 'check-models-info' do ipcMain

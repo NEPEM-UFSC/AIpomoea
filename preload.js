@@ -81,7 +81,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Utilitários do Electron
   getPathForFile: (file) => {
     return webUtils.getPathForFile(file);
-  }
+  },
+
+  // DEBUG & DEV TOOLS
+  isDebug: ipcRenderer.sendSync('is-debug'),
+  getAvailableViews: () => [
+    'index.html',
+    'projects.html',
+    'new_project.html',
+    'import_project.html',
+    'processing_grid.html',
+    'project_summary.html',
+    'settings.html',
+    'help.html',
+    'about.html',
+    'update.html',
+    'first_time.html'
+  ]
 });
 
 // Para compatibilidade com código legado, expor ipcRenderer de forma controlada
@@ -120,3 +136,12 @@ contextBridge.exposeInMainWorld('webUtils', {
 });
 
 console.log('🔗 Preload script loaded successfully (Refactored for execute-pipeline)');
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Verificamos o isDebug via IPC Sync exposto
+  if (ipcRenderer.sendSync('is-debug')) {
+    const script = document.createElement('script');
+    script.src = '../static/js/dev-menu.js';
+    document.body.appendChild(script);
+  }
+});
